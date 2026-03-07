@@ -9,7 +9,7 @@ import SportsTable from '@/components/SportsTable';
 import RejectionsTable from '@/components/RejectionsTable';
 import UserSummaryTable from '@/components/UserSummaryTable';
 import MarketPatternChart from '@/components/MarketPatternChart';
-import { Activity, RefreshCw } from 'lucide-react';
+import { Activity, RefreshCw, FileSpreadsheet, X } from 'lucide-react';
 
 const mergeDashboardData = (existing: DashboardData, incoming: DashboardData): DashboardData => {
   // Merge daily P&L (combine by date, add new dates)
@@ -117,21 +117,29 @@ const mergeDashboardData = (existing: DashboardData, incoming: DashboardData): D
 const Index = () => {
   const [data, setData] = useState<DashboardData>(generateDemoData);
   const [isFirstUpload, setIsFirstUpload] = useState(true);
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
 
-  const handleFileLoad = (buffer: ArrayBuffer) => {
+  const handleFileLoad = (buffer: ArrayBuffer, fileName: string) => {
     try {
       const parsed = parseExcelFile(buffer);
       if (isFirstUpload) {
-        // First upload replaces demo data entirely
         setData(parsed);
         setIsFirstUpload(false);
+        setUploadedFiles([fileName]);
       } else {
-        // Subsequent uploads merge with existing data
         setData(prev => mergeDashboardData(prev, parsed));
+        setUploadedFiles(prev => [...prev, fileName]);
       }
     } catch (e) {
       console.error('Failed to parse Excel:', e);
     }
+  };
+
+  const removeFile = (index: number) => {
+    // Can only reset all files (re-parse would need stored buffers)
+    setUploadedFiles([]);
+    setData(generateDemoData());
+    setIsFirstUpload(true);
   };
 
   const totalPnL = data.dailyPnL.reduce((s, d) => s + d.pnl, 0);
@@ -157,7 +165,7 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => { setData(generateDemoData()); setIsFirstUpload(true); }}
+              onClick={() => { setData(generateDemoData()); setIsFirstUpload(true); setUploadedFiles([]); }}
               className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" />
