@@ -18,65 +18,28 @@ function str(v: any): string {
 
 export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
   const workbook = XLSX.read(buffer, { type: 'array' });
-
   console.log('Sheet names:', workbook.SheetNames);
-  
-  // Parse Report sheet
-  const reportRows = getRows(workbook, 'Report');
-  console.log('Report rows:', reportRows.length, 'Sample:', reportRows[0]);
-  
+
+  // === RAW DATA (main source of truth) ===
   const rawRows = getRows(workbook, 'Raw Data');
   console.log('Raw Data rows:', rawRows.length, 'Sample:', rawRows[0]);
-  
-  const rejectionRows = getRows(workbook, 'Rejection Detail');
-  console.log('Rejection Detail rows:', rejectionRows.length, 'Sample:', rejectionRows[0]);
-  
-  const marketRows = getRows(workbook, 'Market Pattern');
-  console.log('Market Pattern rows:', marketRows.length, 'Sample:', marketRows[0]);
-  
-  const dailyPnL: DailyPnL[] = [];
-  const betSplit: BetSplit[] = [];
-  const sportsBreakdown: SportBreakdown[] = [];
-  const rejectionReasons: RejectionReason[] = [];
-  const userSummaries: UserSummary[] = [];
 
-  // Try to extract daily P&L from Report sheet
-  for (const row of reportRows) {
-    const keys = Object.keys(row);
-    // Look for date-like first column
-    const dateVal = row[keys[0]];
-    if (dateVal && (keys.some(k => k.toLowerCase().includes('pnl') || k.toLowerCase().includes('p&l') || k.toLowerCase().includes('profit')))) {
-      dailyPnL.push({
-        date: str(dateVal),
-        pnl: num(row[keys.find(k => k.toLowerCase().includes('pnl') || k.toLowerCase().includes('p&l') || k.toLowerCase().includes('profit')) || keys[1]]),
-        margin: num(row[keys.find(k => k.toLowerCase().includes('margin')) || keys[2]]) * 100,
-        turnover: num(row[keys.find(k => k.toLowerCase().includes('turnover') || k.toLowerCase().includes('stake')) || keys[3]]),
-      });
-    }
-  }
-
-  // Parse Raw Data for bet splits and user summaries
-  // rawRows already loaded above
   const userMap = new Map<string, { bets: number; turnover: number; pnl: number }>();
   const sportMap = new Map<string, { bets: number; turnover: number; pnl: number }>();
   let liveBets = 0, prematchBets = 0, liveTurnover = 0, prematchTurnover = 0;
+  let totalPnL = 0, totalTurnover = 0;
 
   for (const row of rawRows) {
-    const keys = Object.keys(row);
-    const isLive = keys.some(k => {
-      const v = str(row[k]).toLowerCase();
-      return v === 'live' || v === 'in-play' || v === 'inplay';
-    });
+    const preMatchOrLive = str(row['Pre-Match or Live']).toUpperCase();
+    const isLive = preMatchOrLive === 'L';
 
-    const stakeKey = keys.find(k => k.toLowerCase().includes('stake') || k.toLowerCase().includes('turnover')) || keys[3];
-    const pnlKey = keys.find(k => k.toLowerCase().includes('pnl') || k.toLowerCase().includes('profit') || k.toLowerCase().includes('result')) || keys[4];
-    const userKey = keys.find(k => k.toLowerCase().includes('user') || k.toLowerCase().includes('customer') || k.toLowerCase().includes('player')) || keys[0];
-    const sportKey = keys.find(k => k.toLowerCase().includes('sport')) || keys[1];
+    const stake = num(row['Stake']) || num(row['Unit Stake (EUR)']) || num(row['Total Stake (EUR)']);
+    const pnl = num(row['Pnl']) || num(row['P&L']) || num(row['Distributed P&L']);
+    const sport = str(row['Sport']);
+    const nickname = str(row['Nickname']);
 
-    const stake = num(row[stakeKey]);
-    const pnl = num(row[pnlKey]);
-    const user = str(row[userKey]);
-    const sport = str(row[sportKey]);
+    totalPnL += pnl;
+    totalTurnover += stake;
 
     if (isLive) {
       liveBets++;
@@ -86,14 +49,7 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
       prematchTurnover += stake;
     }
 
-    if (user) {
-      const existing = userMap.get(user) || { bets: 0, turnover: 0, pnl: 0 };
-      existing.bets++;
-      existing.turnover += stake;
-      existing.pnl += pnl;
-      userMap.set(user, existing);
-    }
-
+    // Sport breakdown
     if (sport) {
       const existing = sportMap.get(sport) || { bets: 0, turnover: 0, pnl: 0 };
       existing.bets++;
@@ -101,53 +57,97 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
       existing.pnl += pnl;
       sportMap.set(sport, existing);
     }
+
+    // User summary
+    if (nickname) {
+      const existing = userMap.get(nickname) || { bets: 0, turnover: 0, pnl: 0 };
+      existing.bets++;
+      existing.turnover += stake;
+      existing.pnl += pnl;
+      userMap.set(nickname, existing);
+    }
   }
 
-  if (liveBets + prematchBets > 0) {
-    betSplit.push({
-      date: new Date().toLocaleDateString(),
-      liveBets, prematchBets, liveTurnover, prematchTurnover,
-    });
-  }
+  // Build daily P&L (single day from this file)
+  const dailyPnL: DailyPnL[] = [{
+    date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
+    pnl: Math.round(totalPnL),
+    margin: totalTurnover > 0 ? (totalPnL / totalTurnover) * 100 : 0,
+    turnover: Math.round(totalTurnover),
+  }];
 
-  const totalTurnover = liveTurnover + prematchTurnover;
+  // Build bet split
+  const betSplit: BetSplit[] = [{
+    date: new Date().toLocaleDateString(),
+    liveBets, prematchBets, liveTurnover, prematchTurnover,
+  }];
 
+  // Build sports breakdown
+  const sportsBreakdown: SportBreakdown[] = [];
   for (const [sport, data] of sportMap) {
     sportsBreakdown.push({
       sport,
       bets: data.bets,
-      turnover: data.turnover,
-      pnl: data.pnl,
+      turnover: Math.round(data.turnover),
+      pnl: Math.round(data.pnl),
       margin: data.turnover > 0 ? (data.pnl / data.turnover) * 100 : 0,
     });
   }
+  sportsBreakdown.sort((a, b) => b.turnover - a.turnover);
 
-  for (const [userId, data] of userMap) {
-    const concentrationPct = totalTurnover > 0 ? (data.turnover / totalTurnover) * 100 : 0;
+  // Build user summaries
+  const userSummaries: UserSummary[] = [];
+  for (const [username, data] of userMap) {
+    const concPct = totalTurnover > 0 ? (data.turnover / totalTurnover) * 100 : 0;
     userSummaries.push({
-      userId: userId.slice(0, 8),
-      username: userId,
+      userId: username.slice(0, 8),
+      username,
       bets: data.bets,
-      turnover: data.turnover,
-      pnl: data.pnl,
+      turnover: Math.round(data.turnover),
+      pnl: Math.round(data.pnl),
       margin: data.turnover > 0 ? (data.pnl / data.turnover) * 100 : 0,
-      concentrationRisk: concentrationPct > 20 ? 'high' : concentrationPct > 10 ? 'medium' : 'low',
+      concentrationRisk: (concPct > 20 ? 'high' : concPct > 10 ? 'medium' : 'low') as 'high' | 'medium' | 'low',
     });
   }
+  userSummaries.sort((a, b) => b.turnover - a.turnover);
 
-  // Parse Rejection Detail
-  // rejectionRows already loaded above
+  // === REJECTION DETAIL ===
+  // This sheet has formatted headers. Look for rows with rejection-like data.
+  const rejectionRows = getRows(workbook, 'Rejection Detail');
+  console.log('Rejection Detail rows:', rejectionRows.length, 'First 5:', rejectionRows.slice(0, 5));
+  
   const rejectionMap = new Map<string, { count: number; turnover: number }>();
-
   for (const row of rejectionRows) {
-    const keys = Object.keys(row);
-    const reasonKey = keys.find(k => k.toLowerCase().includes('reason') || k.toLowerCase().includes('type')) || keys[0];
-    const stakeKey = keys.find(k => k.toLowerCase().includes('stake') || k.toLowerCase().includes('turnover') || k.toLowerCase().includes('amount')) || keys[1];
+    const keys = Object.keys(row).filter(k => !k.startsWith('__'));
+    // Try to find reason and stake in any column
+    let reason = '';
+    let stake = 0;
     
-    const reason = str(row[reasonKey]);
-    const stake = num(row[stakeKey]);
-
-    if (reason) {
+    for (const k of keys) {
+      const val = str(row[k]);
+      const numVal = num(row[k]);
+      
+      if (k.toLowerCase().includes('reason') || k.toLowerCase().includes('rejection')) {
+        reason = val;
+      } else if (k.toLowerCase().includes('stake') || k.toLowerCase().includes('turnover') || k.toLowerCase().includes('amount')) {
+        stake = numVal;
+      }
+    }
+    
+    // Fallback: if no labeled columns, try positional from non-empty values
+    if (!reason) {
+      const nonEmpty = keys.filter(k => str(row[k]).trim() !== '' && k !== '__rowNum__');
+      if (nonEmpty.length >= 2) {
+        const firstVal = str(row[nonEmpty[0]]);
+        // Skip header-like rows
+        if (firstVal && !firstVal.includes('REJECTION') && !firstVal.includes('REJECTED') && !firstVal.includes('RISK')) {
+          reason = firstVal;
+          stake = num(row[nonEmpty[1]]) || num(row[nonEmpty[2]]) || 0;
+        }
+      }
+    }
+    
+    if (reason && reason.length > 1) {
       const existing = rejectionMap.get(reason) || { count: 0, turnover: 0 };
       existing.count++;
       existing.turnover += stake;
@@ -155,45 +155,64 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
     }
   }
 
-  const totalRejections = Array.from(rejectionMap.values()).reduce((sum, v) => sum + v.count, 0);
+  const rejectionReasons: RejectionReason[] = [];
+  const totalRejCount = Array.from(rejectionMap.values()).reduce((s, v) => s + v.count, 0);
   for (const [reason, data] of rejectionMap) {
     rejectionReasons.push({
       reason,
       count: data.count,
-      blockedTurnover: data.turnover,
-      percentage: totalRejections > 0 ? (data.count / totalRejections) * 100 : 0,
+      blockedTurnover: Math.round(data.turnover),
+      percentage: totalRejCount > 0 ? (data.count / totalRejCount) * 100 : 0,
     });
   }
+  rejectionReasons.sort((a, b) => b.count - a.count);
 
-  // Parse Market Pattern
-  // marketRows already loaded above
+  // === MARKET PATTERN ===
+  const marketRows = getRows(workbook, 'Market Pattern');
+  console.log('Market Pattern rows:', marketRows.length, 'First 3:', marketRows.slice(0, 3));
+  
   const marketPatterns: MarketPattern[] = [];
-
   for (const row of marketRows) {
-    const keys = Object.keys(row);
-    const marketKey = keys.find(k => k.toLowerCase().includes('market') || k.toLowerCase().includes('type') || k.toLowerCase().includes('name')) || keys[0];
-    const countKey = keys.find(k => k.toLowerCase().includes('count') || k.toLowerCase().includes('bets') || k.toLowerCase().includes('number')) || keys[1];
-    const turnoverKey = keys.find(k => k.toLowerCase().includes('turnover') || k.toLowerCase().includes('stake')) || keys[2];
-    const pnlKey = keys.find(k => k.toLowerCase().includes('pnl') || k.toLowerCase().includes('profit') || k.toLowerCase().includes('result')) || keys[3];
+    const market = str(row['Market Group'] || row['Mg'] || '');
+    const turnover = num(row['Turnover']);
+    const pnl = num(row['P&L'] || row['Pnl'] || row['PnL']);
 
-    const market = str(row[marketKey]);
-    if (market) {
+    if (market && market.length > 0 && !market.includes('MARKET PATTERN')) {
       marketPatterns.push({
         market,
-        count: num(row[countKey]),
-        turnover: num(row[turnoverKey]),
-        pnl: num(row[pnlKey]),
+        count: 0, // Not in this sheet, will derive from Raw Data
+        turnover: Math.round(turnover),
+        pnl: Math.round(pnl),
       });
     }
   }
 
+  // Enrich market pattern counts from Raw Data using Mg column
+  const mgCountMap = new Map<string, number>();
+  for (const row of rawRows) {
+    const mg = str(row['Mg']);
+    if (mg) {
+      mgCountMap.set(mg, (mgCountMap.get(mg) || 0) + 1);
+    }
+  }
+  for (const mp of marketPatterns) {
+    // Try to match by partial name
+    for (const [mg, count] of mgCountMap) {
+      if (mp.market.toLowerCase().includes(mg.toLowerCase()) || mg.toLowerCase().includes(mp.market.toLowerCase())) {
+        mp.count += count;
+      }
+    }
+  }
+
+  marketPatterns.sort((a, b) => b.turnover - a.turnover);
+
   return {
     dailyPnL,
     betSplit,
-    sportsBreakdown: sportsBreakdown.sort((a, b) => b.turnover - a.turnover),
-    rejectionReasons: rejectionReasons.sort((a, b) => b.count - a.count),
-    userSummaries: userSummaries.sort((a, b) => b.turnover - a.turnover),
-    marketPatterns: marketPatterns.sort((a, b) => b.count - a.count),
+    sportsBreakdown,
+    rejectionReasons,
+    userSummaries,
+    marketPatterns,
     uploadDate: new Date().toISOString(),
   };
 }
@@ -219,36 +238,21 @@ export function generateDemoData(): DashboardData {
 
   const betSplit: BetSplit[] = [{
     date: new Date().toLocaleDateString(),
-    liveBets: 1847,
-    prematchBets: 3254,
-    liveTurnover: 287500,
-    prematchTurnover: 412300,
+    liveBets: 1847, prematchBets: 3254,
+    liveTurnover: 287500, prematchTurnover: 412300,
   }];
 
   const sportsBreakdown: SportBreakdown[] = sports.map(sport => {
     const turnover = 20000 + Math.random() * 180000;
     const pnl = (Math.random() - 0.35) * turnover * 0.06;
-    return {
-      sport,
-      bets: Math.round(100 + Math.random() * 1500),
-      turnover: Math.round(turnover),
-      pnl: Math.round(pnl),
-      margin: (pnl / turnover) * 100,
-    };
+    return { sport, bets: Math.round(100 + Math.random() * 1500), turnover: Math.round(turnover), pnl: Math.round(pnl), margin: (pnl / turnover) * 100 };
   }).sort((a, b) => b.turnover - a.turnover);
 
   const totalRej = reasons.length;
   const rejectionReasons: RejectionReason[] = reasons.map(reason => {
     const count = Math.round(20 + Math.random() * 200);
-    return {
-      reason,
-      count,
-      blockedTurnover: Math.round(count * (50 + Math.random() * 300)),
-      percentage: (count / (totalRej * 100)) * 100,
-    };
+    return { reason, count, blockedTurnover: Math.round(count * (50 + Math.random() * 300)), percentage: (count / (totalRej * 100)) * 100 };
   }).sort((a, b) => b.count - a.count);
-
-  // Recalculate percentages
   const totalRejCount = rejectionReasons.reduce((s, r) => s + r.count, 0);
   rejectionReasons.forEach(r => r.percentage = (r.count / totalRejCount) * 100);
 
@@ -259,11 +263,8 @@ export function generateDemoData(): DashboardData {
     const pnl = (Math.random() - (i < 2 ? 0.6 : 0.35)) * turnover * 0.05;
     const concPct = (turnover / totalTO) * 100;
     return {
-      userId: `USR${String(1000 + i).slice(1)}`,
-      username,
-      bets: Math.round(20 + Math.random() * 500),
-      turnover: Math.round(turnover),
-      pnl: Math.round(pnl),
+      userId: `USR${String(1000 + i).slice(1)}`, username,
+      bets: Math.round(20 + Math.random() * 500), turnover: Math.round(turnover), pnl: Math.round(pnl),
       margin: (pnl / turnover) * 100,
       concentrationRisk: (concPct > 20 ? 'high' : concPct > 10 ? 'medium' : 'low') as 'high' | 'medium' | 'low',
     };
@@ -276,13 +277,5 @@ export function generateDemoData(): DashboardData {
     return { market, count, turnover: Math.round(turnover), pnl: Math.round(pnl) };
   }).sort((a, b) => b.count - a.count);
 
-  return {
-    dailyPnL,
-    betSplit,
-    sportsBreakdown,
-    rejectionReasons,
-    userSummaries,
-    marketPatterns,
-    uploadDate: new Date().toISOString(),
-  };
+  return { dailyPnL, betSplit, sportsBreakdown, rejectionReasons, userSummaries, marketPatterns, uploadDate: new Date().toISOString() };
 }
