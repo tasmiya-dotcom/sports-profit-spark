@@ -19,8 +19,20 @@ function str(v: any): string {
 export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
   const workbook = XLSX.read(buffer, { type: 'array' });
 
+  console.log('Sheet names:', workbook.SheetNames);
+  
   // Parse Report sheet
   const reportRows = getRows(workbook, 'Report');
+  console.log('Report rows:', reportRows.length, 'Sample:', reportRows[0]);
+  
+  const rawRows = getRows(workbook, 'Raw Data');
+  console.log('Raw Data rows:', rawRows.length, 'Sample:', rawRows[0]);
+  
+  const rejectionRows = getRows(workbook, 'Rejection Detail');
+  console.log('Rejection Detail rows:', rejectionRows.length, 'Sample:', rejectionRows[0]);
+  
+  const marketRows = getRows(workbook, 'Market Pattern');
+  console.log('Market Pattern rows:', marketRows.length, 'Sample:', marketRows[0]);
   
   const dailyPnL: DailyPnL[] = [];
   const betSplit: BetSplit[] = [];
@@ -44,7 +56,7 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
   }
 
   // Parse Raw Data for bet splits and user summaries
-  const rawRows = getRows(workbook, 'Raw Data');
+  // rawRows already loaded above
   const userMap = new Map<string, { bets: number; turnover: number; pnl: number }>();
   const sportMap = new Map<string, { bets: number; turnover: number; pnl: number }>();
   let liveBets = 0, prematchBets = 0, liveTurnover = 0, prematchTurnover = 0;
@@ -124,7 +136,7 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
   }
 
   // Parse Rejection Detail
-  const rejectionRows = getRows(workbook, 'Rejection Detail');
+  // rejectionRows already loaded above
   const rejectionMap = new Map<string, { count: number; turnover: number }>();
 
   for (const row of rejectionRows) {
@@ -154,7 +166,7 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
   }
 
   // Parse Market Pattern
-  const marketRows = getRows(workbook, 'Market Pattern');
+  // marketRows already loaded above
   const marketPatterns: MarketPattern[] = [];
 
   for (const row of marketRows) {
