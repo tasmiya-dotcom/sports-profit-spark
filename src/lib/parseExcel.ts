@@ -253,7 +253,7 @@ export function generateDemoData(): DashboardData {
       turnover: Math.round(turnover),
       pnl: Math.round(pnl),
       margin: (pnl / turnover) * 100,
-      concentrationRisk: concPct > 20 ? 'high' : concPct > 10 ? 'medium' : 'low',
+      concentrationRisk: (concPct > 20 ? 'high' : concPct > 10 ? 'medium' : 'low') as 'high' | 'medium' | 'low',
     };
   }).sort((a, b) => b.turnover - a.turnover);
 
