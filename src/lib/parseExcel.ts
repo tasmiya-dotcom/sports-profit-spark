@@ -19,8 +19,20 @@ function str(v: any): string {
 export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
   const workbook = XLSX.read(buffer, { type: 'array' });
 
+  console.log('Sheet names:', workbook.SheetNames);
+  
   // Parse Report sheet
   const reportRows = getRows(workbook, 'Report');
+  console.log('Report rows:', reportRows.length, 'Sample:', reportRows[0]);
+  
+  const rawRows = getRows(workbook, 'Raw Data');
+  console.log('Raw Data rows:', rawRows.length, 'Sample:', rawRows[0]);
+  
+  const rejectionRows = getRows(workbook, 'Rejection Detail');
+  console.log('Rejection Detail rows:', rejectionRows.length, 'Sample:', rejectionRows[0]);
+  
+  const marketRows = getRows(workbook, 'Market Pattern');
+  console.log('Market Pattern rows:', marketRows.length, 'Sample:', marketRows[0]);
   
   const dailyPnL: DailyPnL[] = [];
   const betSplit: BetSplit[] = [];
