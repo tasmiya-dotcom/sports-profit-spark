@@ -12,7 +12,11 @@ export default {
         "2xl": "1400px",
       },
     },
-    extend: {
+    fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
+      },
+      extend: {
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -56,6 +60,14 @@ export default {
           "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
+        },
+        chart: {
+          profit: "hsl(var(--chart-profit))",
+          loss: "hsl(var(--chart-loss))",
+          live: "hsl(var(--chart-live))",
+          prematch: "hsl(var(--chart-prematch))",
+          warning: "hsl(var(--chart-warning))",
+          neutral: "hsl(var(--chart-neutral))",
         },
       },
       borderRadius: {
