@@ -11,13 +11,124 @@ import UserSummaryTable from '@/components/UserSummaryTable';
 import MarketPatternChart from '@/components/MarketPatternChart';
 import { Activity, RefreshCw } from 'lucide-react';
 
+const mergeDashboardData = (existing: DashboardData, incoming: DashboardData): DashboardData => {
+  // Merge daily P&L (combine by date, add new dates)
+  const pnlMap = new Map(existing.dailyPnL.map(d => [d.date, { ...d }]));
+  for (const d of incoming.dailyPnL) {
+    const ex = pnlMap.get(d.date);
+    if (ex) {
+      ex.pnl += d.pnl;
+      ex.turnover += d.turnover;
+      ex.margin = ex.turnover > 0 ? (ex.pnl / ex.turnover) * 100 : 0;
+    } else {
+      pnlMap.set(d.date, { ...d });
+    }
+  }
+
+  // Merge bet splits
+  const betSplit = [...existing.betSplit];
+  for (const b of incoming.betSplit) {
+    const ex = betSplit.find(e => e.date === b.date);
+    if (ex) {
+      ex.liveBets += b.liveBets;
+      ex.prematchBets += b.prematchBets;
+      ex.liveTurnover += b.liveTurnover;
+      ex.prematchTurnover += b.prematchTurnover;
+    } else {
+      betSplit.push({ ...b });
+    }
+  }
+
+  // Merge sports breakdown
+  const sportMap = new Map(existing.sportsBreakdown.map(s => [s.sport, { ...s }]));
+  for (const s of incoming.sportsBreakdown) {
+    const ex = sportMap.get(s.sport);
+    if (ex) {
+      ex.bets += s.bets;
+      ex.turnover += s.turnover;
+      ex.pnl += s.pnl;
+      ex.margin = ex.turnover > 0 ? (ex.pnl / ex.turnover) * 100 : 0;
+    } else {
+      sportMap.set(s.sport, { ...s });
+    }
+  }
+
+  // Merge rejections
+  const rejMap = new Map(existing.rejectionReasons.map(r => [r.reason, { ...r }]));
+  for (const r of incoming.rejectionReasons) {
+    const ex = rejMap.get(r.reason);
+    if (ex) {
+      ex.count += r.count;
+      ex.blockedTurnover += r.blockedTurnover;
+    } else {
+      rejMap.set(r.reason, { ...r });
+    }
+  }
+  const rejections = Array.from(rejMap.values());
+  const totalRejCount = rejections.reduce((s, r) => s + r.count, 0);
+  rejections.forEach(r => r.percentage = totalRejCount > 0 ? (r.count / totalRejCount) * 100 : 0);
+  rejections.sort((a, b) => b.count - a.count);
+
+  // Merge user summaries
+  const userMap = new Map(existing.userSummaries.map(u => [u.username, { ...u }]));
+  for (const u of incoming.userSummaries) {
+    const ex = userMap.get(u.username);
+    if (ex) {
+      ex.bets += u.bets;
+      ex.turnover += u.turnover;
+      ex.pnl += u.pnl;
+      ex.margin = ex.turnover > 0 ? (ex.pnl / ex.turnover) * 100 : 0;
+    } else {
+      userMap.set(u.username, { ...u });
+    }
+  }
+  const users = Array.from(userMap.values());
+  const totalTO = users.reduce((s, u) => s + u.turnover, 0);
+  users.forEach(u => {
+    const pct = totalTO > 0 ? (u.turnover / totalTO) * 100 : 0;
+    u.concentrationRisk = pct > 20 ? 'high' : pct > 10 ? 'medium' : 'low';
+  });
+  users.sort((a, b) => b.turnover - a.turnover);
+
+  // Merge market patterns
+  const mktMap = new Map(existing.marketPatterns.map(m => [m.market, { ...m }]));
+  for (const m of incoming.marketPatterns) {
+    const ex = mktMap.get(m.market);
+    if (ex) {
+      ex.count += m.count;
+      ex.turnover += m.turnover;
+      ex.pnl += m.pnl;
+    } else {
+      mktMap.set(m.market, { ...m });
+    }
+  }
+
+  return {
+    dailyPnL: Array.from(pnlMap.values()),
+    betSplit,
+    sportsBreakdown: Array.from(sportMap.values()).sort((a, b) => b.turnover - a.turnover),
+    rejectionReasons: rejections,
+    userSummaries: users,
+    marketPatterns: Array.from(mktMap.values()).sort((a, b) => b.turnover - a.turnover),
+    uploadDate: incoming.uploadDate,
+  };
+};
+
 const Index = () => {
   const [data, setData] = useState<DashboardData>(generateDemoData);
+  const [isFirstUpload, setIsFirstUpload] = useState(true);
 
   const handleFileLoad = (buffer: ArrayBuffer) => {
     try {
       const parsed = parseExcelFile(buffer);
-      setData(parsed);
+      if (isFirstUpload) {
+        // First upload replaces demo data entirely
+        setData(parsed);
+        setIsFirstUpload(false);
+      } else {
+        // Subsequent uploads merge with existing data
+        setData(prev => mergeDashboardData(prev, parsed));
+      }
     } catch (e) {
       console.error('Failed to parse Excel:', e);
     }
