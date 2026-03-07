@@ -157,7 +157,7 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setData(generateDemoData())}
+              onClick={() => { setData(generateDemoData()); setIsFirstUpload(true); }}
               className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" />
