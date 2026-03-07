@@ -178,6 +178,30 @@ const Index = () => {
         </div>
       </header>
 
+      {uploadedFiles.length > 0 && (
+        <div className="max-w-[1600px] mx-auto px-6 pt-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-medium text-muted-foreground">Loaded files:</span>
+            {uploadedFiles.map((name, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium"
+              >
+                <FileSpreadsheet className="w-3 h-3" />
+                {name}
+              </span>
+            ))}
+            <button
+              onClick={() => { setUploadedFiles([]); setData(generateDemoData()); setIsFirstUpload(true); }}
+              className="text-xs text-muted-foreground hover:text-destructive transition-colors ml-1"
+              title="Clear all files"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       <main className="max-w-[1600px] mx-auto p-6 space-y-6">
         {/* KPI Row */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
