@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { Upload } from 'lucide-react';
 
 interface FileUploadProps {
-  onFileLoad: (buffer: ArrayBuffer) => void;
+  onFileLoad: (buffer: ArrayBuffer, fileName: string) => void;
 }
 
 const FileUpload = ({ onFileLoad }: FileUploadProps) => {
@@ -15,7 +15,7 @@ const FileUpload = ({ onFileLoad }: FileUploadProps) => {
   const readFile = (file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
-      if (e.target?.result) onFileLoad(e.target.result as ArrayBuffer);
+      if (e.target?.result) onFileLoad(e.target.result as ArrayBuffer, file.name);
     };
     reader.readAsArrayBuffer(file);
   };
