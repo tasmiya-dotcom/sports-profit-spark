@@ -56,7 +56,7 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
   }
 
   // Parse Raw Data for bet splits and user summaries
-  const rawRows = getRows(workbook, 'Raw Data');
+  // rawRows already loaded above
   const userMap = new Map<string, { bets: number; turnover: number; pnl: number }>();
   const sportMap = new Map<string, { bets: number; turnover: number; pnl: number }>();
   let liveBets = 0, prematchBets = 0, liveTurnover = 0, prematchTurnover = 0;
@@ -136,7 +136,7 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
   }
 
   // Parse Rejection Detail
-  const rejectionRows = getRows(workbook, 'Rejection Detail');
+  // rejectionRows already loaded above
   const rejectionMap = new Map<string, { count: number; turnover: number }>();
 
   for (const row of rejectionRows) {
@@ -166,7 +166,7 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
   }
 
   // Parse Market Pattern
-  const marketRows = getRows(workbook, 'Market Pattern');
+  // marketRows already loaded above
   const marketPatterns: MarketPattern[] = [];
 
   for (const row of marketRows) {
