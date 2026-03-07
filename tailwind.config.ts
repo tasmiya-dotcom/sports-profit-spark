@@ -61,6 +61,14 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        chart: {
+          profit: "hsl(var(--chart-profit))",
+          loss: "hsl(var(--chart-loss))",
+          live: "hsl(var(--chart-live))",
+          prematch: "hsl(var(--chart-prematch))",
+          warning: "hsl(var(--chart-warning))",
+          neutral: "hsl(var(--chart-neutral))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
