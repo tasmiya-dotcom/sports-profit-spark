@@ -440,6 +440,23 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
   }
   marketPatterns.sort((a, b) => b.turnover - a.turnover);
 
+  // === TOP PLAYER with CCF ===
+  let topPlayer: TopPlayerSpotlight | null = null;
+  if (topPlayerFromReport) {
+    // Try to find CCF from Raw Data for this player
+    let ccf: number | null = null;
+    const playerKey = topPlayerFromReport.nickname !== '—' ? topPlayerFromReport.nickname : topPlayerFromReport.sourceId;
+    for (const row of rawRows) {
+      const nickname = str(row['Nickname']);
+      const sourceId = str(row['Source ID'] || row['SourceID'] || row['Source']);
+      if (nickname === playerKey || sourceId === playerKey || sourceId === topPlayerFromReport.sourceId) {
+        const ccfVal = num(row['CCF'] || row['Customer Factor'] || row['CustomerFactor']);
+        if (ccfVal !== 0) { ccf = ccfVal; break; }
+      }
+    }
+    topPlayer = { ...topPlayerFromReport, ccf };
+  }
+
   return {
     reportDate,
     reportLabel,
@@ -450,7 +467,7 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
     rejectionReasons,
     userSummaries,
     marketPatterns,
-    riskAlerts,
+    topPlayer,
     uploadDate: new Date().toISOString(),
   };
 }
