@@ -9,6 +9,8 @@ interface Props {
   onResetAll: () => void;
 }
 
+const fmt = (v: number) => `€${Math.round(v).toLocaleString()}`;
+
 const UploadHistoryPanel = ({ history, selectedId, onSelect, onDelete, onResetAll }: Props) => {
   if (history.length === 0) return null;
 
@@ -39,7 +41,7 @@ const UploadHistoryPanel = ({ history, selectedId, onSelect, onDelete, onResetAl
         }`}
       >
         <div className="flex items-center justify-between">
-          <span className="font-medium">All Days (Merged)</span>
+          <span className="font-medium">All Days Overview</span>
           {selectedId === null && <Eye className="w-3 h-3" />}
         </div>
       </button>
@@ -47,10 +49,7 @@ const UploadHistoryPanel = ({ history, selectedId, onSelect, onDelete, onResetAl
       {/* Per-day rows */}
       <div className="space-y-1 max-h-64 overflow-y-auto">
         {history.map(entry => {
-          const totalPnL = entry.data.dailyPnL.reduce((s, d) => s + d.pnl, 0);
-          const totalTurnover = entry.data.dailyPnL.reduce((s, d) => s + d.turnover, 0);
-          const totalBets = entry.data.betSplit.reduce((s, d) => s + d.liveBets + d.prematchBets, 0);
-          const margin = totalTurnover > 0 ? (totalPnL / totalTurnover) * 100 : 0;
+          const kpi = entry.data.kpiSummary;
           const isActive = selectedId === entry.id;
 
           return (
@@ -71,12 +70,12 @@ const UploadHistoryPanel = ({ history, selectedId, onSelect, onDelete, onResetAl
                   {isActive && <Eye className="w-3 h-3 text-primary" />}
                 </div>
                 <div className="flex items-center gap-3 mt-0.5 text-muted-foreground">
-                  <span className={totalPnL >= 0 ? 'text-primary' : 'text-destructive'}>
-                    P&L: {totalPnL >= 0 ? '+' : ''}${Math.round(totalPnL).toLocaleString()}
+                  <span className={kpi.pnl >= 0 ? 'text-primary' : 'text-destructive'}>
+                    P&L: {kpi.pnl >= 0 ? '+' : ''}{fmt(kpi.pnl)}
                   </span>
-                  <span>TO: ${Math.round(totalTurnover).toLocaleString()}</span>
-                  <span>Bets: {totalBets.toLocaleString()}</span>
-                  <span>Margin: {margin.toFixed(2)}%</span>
+                  <span>TO: {fmt(kpi.turnover)}</span>
+                  <span>Bets: {kpi.bets.toLocaleString()}</span>
+                  <span>Margin: {kpi.margin.toFixed(2)}%</span>
                 </div>
                 <div className="text-muted-foreground/60 truncate mt-0.5">{entry.fileName}</div>
               </div>

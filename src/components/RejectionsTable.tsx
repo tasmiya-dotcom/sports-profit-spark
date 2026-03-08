@@ -5,6 +5,8 @@ interface RejectionsTableProps {
 }
 
 const RejectionsTable = ({ data }: RejectionsTableProps) => {
+  const topReason = data.length > 0 ? data[0].reason : null;
+
   return (
     <div className="kpi-card">
       <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Rejection Reasons</h3>
@@ -13,30 +15,24 @@ const RejectionsTable = ({ data }: RejectionsTableProps) => {
           <thead>
             <tr>
               <th>Reason</th>
-              <th>Count</th>
+              <th>Bets</th>
               <th>Blocked Turnover</th>
+              <th>Potential P&L</th>
               <th>% of Total</th>
-              <th></th>
             </tr>
           </thead>
           <tbody>
             {data.map((row) => (
-              <tr key={row.reason}>
-                <td className="font-sans font-medium">{row.reason}</td>
-                <td>{row.count.toLocaleString()}</td>
-                <td className="value-warning">${row.blockedTurnover.toLocaleString()}</td>
-                <td>{row.percentage.toFixed(1)}%</td>
-                <td className="w-32">
-                  <div className="w-full bg-secondary rounded-full h-1.5">
-                    <div
-                      className="h-1.5 rounded-full"
-                      style={{
-                        width: `${Math.min(row.percentage, 100)}%`,
-                        background: 'hsl(var(--chart-warning))',
-                      }}
-                    />
-                  </div>
+              <tr key={row.reason} className={row.reason === topReason ? 'bg-destructive/10' : ''}>
+                <td className={`font-sans font-medium ${row.reason === topReason ? 'text-destructive' : ''}`}>
+                  {row.reason}
                 </td>
+                <td>{row.count.toLocaleString()}</td>
+                <td className="value-warning">€{row.blockedTurnover.toLocaleString()}</td>
+                <td className={row.potentialPnl >= 0 ? 'value-positive' : 'value-negative'}>
+                  {row.potentialPnl >= 0 ? '+' : ''}€{row.potentialPnl.toLocaleString()}
+                </td>
+                <td>{row.percentage.toFixed(2)}%</td>
               </tr>
             ))}
           </tbody>
