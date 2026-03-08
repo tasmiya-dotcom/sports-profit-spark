@@ -5,6 +5,7 @@ interface RiskAlertsPanelProps {
 }
 
 const RiskAlertsPanel = ({ alerts }: RiskAlertsPanelProps) => {
+  console.log('RiskAlertsPanel receiving alerts:', JSON.stringify(alerts, null, 2));
   if (!alerts) return null;
 
   const hasAlerts = alerts.length > 0;
