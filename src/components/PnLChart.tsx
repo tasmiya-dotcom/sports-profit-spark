@@ -8,11 +8,13 @@ interface PnLChartProps {
 }
 
 const PnLChart = ({ history, selectedId, onSelectDay }: PnLChartProps) => {
-  const chartData = history.map(entry => ({
-    date: entry.data.dailyPnL[0]?.date ?? entry.label,
-    pnl: entry.data.kpiSummary.pnl,
-    id: entry.id,
-  }));
+  const chartData = history
+    .filter(entry => entry.data?.kpiSummary)
+    .map(entry => ({
+      date: entry.data.dailyPnL?.[0]?.date ?? entry.label,
+      pnl: entry.data.kpiSummary.pnl,
+      id: entry.id,
+    }));
 
   const handleClick = (data: any) => {
     if (data?.activePayload?.[0]?.payload?.id) {

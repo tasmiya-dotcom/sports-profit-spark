@@ -49,7 +49,8 @@ const UploadHistoryPanel = ({ history, selectedId, onSelect, onDelete, onResetAl
       {/* Per-day rows */}
       <div className="space-y-1 max-h-64 overflow-y-auto">
         {history.map(entry => {
-          const kpi = entry.data.kpiSummary;
+          const kpi = entry.data?.kpiSummary;
+          if (!kpi) return null;
           const isActive = selectedId === entry.id;
 
           return (
