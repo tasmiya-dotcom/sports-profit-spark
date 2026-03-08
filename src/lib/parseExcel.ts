@@ -118,15 +118,40 @@ function findReportValue(grid: any[][], label: string): number {
 
 /**
  * Extract risk alerts from the Report sheet.
+ * Dynamically finds the "RISK ALERTS" section header in column B,
+ * then reads every row until "ACCEPTED" is found in column B.
  */
 function extractRiskAlerts(grid: any[][]): RiskAlert[] {
   const alerts: RiskAlert[] = [];
 
-  // Rows 4-7 in Excel = 0-indexed rows 3-6, column B = index 1
-  for (let r = 3; r <= 6; r++) {
+  // Find the header row containing "RISK ALERTS" in column B
+  let headerRow = -1;
+  for (let r = 0; r < grid.length; r++) {
+    const colB = str(grid[r]?.[1]).trim().toUpperCase();
+    if (colB === 'RISK ALERTS') {
+      headerRow = r;
+      break;
+    }
+  }
+  if (headerRow === -1) return alerts;
+
+  // Find the end row containing "ACCEPTED" in column B
+  let endRow = grid.length;
+  for (let r = headerRow + 1; r < grid.length; r++) {
+    const colB = str(grid[r]?.[1]).trim().toUpperCase();
+    if (colB === 'ACCEPTED') {
+      endRow = r;
+      break;
+    }
+  }
+
+  // Read every row between header and end
+  for (let r = headerRow + 1; r < endRow; r++) {
     const colB = str(grid[r]?.[1]).trim();
     if (!colB) continue;
-    // Determine type based on content
+    // Skip the header itself if matched loosely
+    if (colB.toUpperCase() === 'RISK ALERTS') continue;
+
     const upper = colB.toUpperCase();
     const isWarning = upper.includes('CONCENTRATION') || upper.includes('CCF');
     alerts.push({ type: isWarning ? 'warning' : 'info', message: colB });
