@@ -26,18 +26,9 @@ const Index = () => {
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const hasHistory = history.length > 0;
-  const demo = generateDemoData();
-
-  // When a specific day is selected show it; when "All Days" show first day; otherwise demo
-  const data: DashboardData = activeData
-    ? activeData
-    : hasHistory
-      ? history[0].data
-      : demo;
-
-  // Safety: if data somehow lacks kpiSummary, fall back to demo
-  const kpiSafe = data?.kpiSummary ?? demo.kpiSummary;
+  // History always has at least the 2 default entries
+  const data: DashboardData = activeData ?? history[0].data;
+  const kpi = data.kpiSummary;
 
   const handleFileLoad = (buffer: ArrayBuffer, fileName: string) => {
     setUploadError(null);
