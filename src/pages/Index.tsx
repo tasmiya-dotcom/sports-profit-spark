@@ -27,9 +27,75 @@ const Index = () => {
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [kpiModal, setKpiModal] = useState<'pnl' | 'turnover' | 'margin' | 'bets' | 'rejections' | 'highRisk' | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const dashboardRef = useRef<HTMLElement>(null);
+
   // History always has at least the 2 default entries
   const data: DashboardData = activeData ?? history[0].data;
   const kpi = data.kpiSummary;
+
+  const handleDownloadPDF = useCallback(async () => {
+    if (!dashboardRef.current || isExporting) return;
+    setIsExporting(true);
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+
+      const element = dashboardRef.current;
+      const canvas = await html2canvas(element, {
+        backgroundColor: '#0a0a0a',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        windowWidth: 1600,
+      });
+
+      const imgWidth = 297; // A4 landscape width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+      // Add pages as needed
+      const pageHeight = 210; // A4 landscape height in mm
+      let position = 0;
+      let remainingHeight = imgHeight;
+      let page = 0;
+
+      while (remainingHeight > 0) {
+        if (page > 0) pdf.addPage();
+
+        const sourceY = (position / imgHeight) * canvas.height;
+        const sourceH = Math.min((pageHeight / imgHeight) * canvas.height, canvas.height - sourceY);
+
+        // Create a slice canvas for this page
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sourceH;
+        const ctx = pageCanvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#0a0a0a';
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+          ctx.drawImage(canvas, 0, sourceY, canvas.width, sourceH, 0, 0, canvas.width, sourceH);
+        }
+
+        const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.92);
+        const sliceHeight = (sourceH / canvas.width) * imgWidth;
+        pdf.addImage(pageImgData, 'JPEG', 0, 0, imgWidth, sliceHeight);
+
+        position += pageHeight;
+        remainingHeight -= pageHeight;
+        page++;
+      }
+
+      const dateLabel = activeData
+        ? activeData.reportDate.replace(/-/g, '')
+        : 'AllDays';
+      pdf.save(`Arena365_Dashboard_${dateLabel}.pdf`);
+    } catch (err) {
+      console.error('PDF export failed:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [activeData, isExporting]);
 
   const handleFileLoad = (buffer: ArrayBuffer, fileName: string) => {
     setUploadError(null);
