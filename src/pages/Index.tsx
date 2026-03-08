@@ -63,7 +63,7 @@ const Index = () => {
     setUploadSuccess(null);
   };
 
-  const kpi = data.kpiSummary;
+  const kpi = kpiSafe;
 
   return (
     <div className="min-h-screen bg-background">
