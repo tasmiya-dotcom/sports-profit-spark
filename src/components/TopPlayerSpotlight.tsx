@@ -29,7 +29,7 @@ const TopPlayerSpotlightPanel = ({ player }: TopPlayerSpotlightProps) => {
   return (
     <div className={`kpi-card border-2 ${
       isHighRisk
-        ? 'border-destructive/40 bg-destructive/5'
+        ? 'glow-green border-primary'
         : 'border-border'
     }`}>
       <div className="flex items-center justify-between mb-4">
