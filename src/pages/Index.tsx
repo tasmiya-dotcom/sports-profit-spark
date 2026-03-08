@@ -71,12 +71,15 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border px-6 py-4">
+      <header className="border-b border-border px-6 py-4" style={{ background: 'linear-gradient(180deg, hsl(128 28% 16%) 0%, hsl(var(--background)) 100%)' }}>
         <div className="max-w-[1600px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Activity className="w-6 h-6 text-primary" />
             <div>
-              <h1 className="text-lg font-bold tracking-tight uppercase text-primary">ARENA365</h1>
+              <h1 className="text-lg font-bold tracking-tight uppercase">
+                <span className="text-foreground">ARENA</span>
+                <span className="text-primary">365</span>
+              </h1>
               <p className="text-xs text-muted-foreground">
                 {activeData
                   ? `Viewing: ${activeData.reportLabel}`
