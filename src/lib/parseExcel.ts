@@ -117,47 +117,67 @@ function findReportValue(grid: any[][], label: string): number {
 }
 
 /**
- * Extract risk alerts from the Report sheet.
- * Dynamically finds the "RISK ALERTS" section header in column B,
- * then reads every row until "ACCEPTED" is found in column B.
+ * Extract top player from "Per User Summary" section of Report sheet.
+ * Finds the player with the highest turnover share.
  */
-function extractRiskAlerts(grid: any[][]): RiskAlert[] {
-  const alerts: RiskAlert[] = [];
+function extractTopPlayerFromReport(grid: any[][]): { nickname: string; sourceId: string; bets: number; turnover: number; turnoverSharePct: number } | null {
+  let inUserSection = false;
+  let headerRow: any[] | null = null;
+  let colMap: Record<string, number> = {};
+  let bestPlayer: { nickname: string; sourceId: string; bets: number; turnover: number; turnoverSharePct: number } | null = null;
+  let bestShare = -1;
 
-  // Find the header row containing "RISK ALERTS" in column B
-  let headerRow = -1;
   for (let r = 0; r < grid.length; r++) {
-    const colB = str(grid[r]?.[1]).trim().toUpperCase();
-    if (colB === 'RISK ALERTS') {
-      headerRow = r;
-      break;
+    const cell0 = str(grid[r]?.[0]).toLowerCase();
+
+    if (cell0.includes('per user') || cell0.includes('user summary')) {
+      inUserSection = true;
+      continue;
+    }
+
+    if (inUserSection && !headerRow) {
+      // Detect header row by looking for recognizable column names
+      const row = grid[r];
+      for (let c = 0; c < (row?.length || 0); c++) {
+        const h = str(row[c]).toLowerCase();
+        if (h.includes('nickname') || h.includes('nick')) colMap['nickname'] = c;
+        if (h.includes('source') || h.includes('id')) colMap['sourceId'] = c;
+        if (h.includes('bet') && !h.includes('turnover')) colMap['bets'] = c;
+        if (h.includes('turnover') || h.includes('stake')) colMap['turnover'] = c;
+        if (h.includes('%') || h.includes('share') || h.includes('concentration') || h.includes('percent')) colMap['share'] = c;
+      }
+      if (Object.keys(colMap).length >= 2) {
+        headerRow = row;
+        continue;
+      } else {
+        colMap = {};
+      }
+    }
+
+    if (inUserSection && headerRow) {
+      const row = grid[r];
+      // Stop at next section
+      const c0 = str(row?.[0]).toLowerCase();
+      if (c0 && (c0.includes('risk') || c0.includes('market') || c0.includes('sport') || c0.includes('rejection'))) break;
+
+      const share = num(row?.[colMap['share']]);
+      const sharePct = share > 1 ? share : share * 100;
+      if (sharePct > bestShare && sharePct > 0) {
+        bestShare = sharePct;
+        const nick = str(row?.[colMap['nickname']]);
+        const srcId = str(row?.[colMap['sourceId']]);
+        bestPlayer = {
+          nickname: nick || '—',
+          sourceId: srcId || nick || 'Unknown',
+          bets: Math.round(num(row?.[colMap['bets']])),
+          turnover: Math.round(num(row?.[colMap['turnover']])),
+          turnoverSharePct: Math.round(sharePct * 10) / 10,
+        };
+      }
     }
   }
-  if (headerRow === -1) return alerts;
 
-  // Find the end row containing "ACCEPTED" in column B
-  let endRow = grid.length;
-  for (let r = headerRow + 1; r < grid.length; r++) {
-    const colB = str(grid[r]?.[1]).trim().toUpperCase();
-    if (colB === 'ACCEPTED') {
-      endRow = r;
-      break;
-    }
-  }
-
-  // Read every row between header and end
-  for (let r = headerRow + 1; r < endRow; r++) {
-    const colB = str(grid[r]?.[1]).trim();
-    if (!colB) continue;
-    // Skip the header itself if matched loosely
-    if (colB.toUpperCase() === 'RISK ALERTS') continue;
-
-    const upper = colB.toUpperCase();
-    const isWarning = upper.includes('CONCENTRATION') || upper.includes('CCF');
-    alerts.push({ type: isWarning ? 'warning' : 'info', message: colB });
-  }
-
-  return alerts;
+  return bestPlayer;
 }
 
 /**
