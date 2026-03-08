@@ -184,44 +184,75 @@ function extractTopPlayerFromReport(grid: any[][]): { nickname: string; sourceId
  * Count high risk users from Report sheet "Per User Summary" section (users >50% share).
  */
 function countHighRiskUsersFromReport(grid: any[][]): number {
-  let inUserSection = false;
-  let pctColIdx = -1;
-  let count = 0;
+  const users = extractAllUsersFromReport(grid);
+  return users.filter(u => u.concentrationRisk === 'high').length;
+}
 
-  for (const row of grid) {
-    const cell0 = str(row[0]).toLowerCase();
+/**
+ * Extract ALL users from "Per User Summary" section of Report sheet.
+ */
+function extractAllUsersFromReport(grid: any[][]): UserSummary[] {
+  let inUserSection = false;
+  let headerRow: any[] | null = null;
+  let colMap: Record<string, number> = {};
+  const users: UserSummary[] = [];
+
+  for (let r = 0; r < grid.length; r++) {
+    const cell0 = str(grid[r]?.[0]).toLowerCase();
 
     if (cell0.includes('per user') || cell0.includes('user summary')) {
       inUserSection = true;
       continue;
     }
 
-    if (inUserSection && pctColIdx === -1) {
-      // Find header row with percentage column
-      for (let c = 0; c < row.length; c++) {
+    if (inUserSection && !headerRow) {
+      const row = grid[r];
+      for (let c = 0; c < (row?.length || 0); c++) {
         const h = str(row[c]).toLowerCase();
-        if (h.includes('%') || h.includes('share') || h.includes('concentration') || h.includes('percent')) {
-          pctColIdx = c;
-          break;
-        }
+        if (h.includes('nickname') || h.includes('nick')) colMap['nickname'] = c;
+        if (h.includes('source') || h.includes('id')) colMap['sourceId'] = c;
+        if (h.includes('bet') && !h.includes('turnover')) colMap['bets'] = c;
+        if (h.includes('turnover') || h.includes('stake')) colMap['turnover'] = c;
+        if (h.includes('p&l') || h.includes('pnl') || h.includes('profit')) colMap['pnl'] = c;
+        if (h.includes('margin')) colMap['margin'] = c;
+        if (h.includes('%') || h.includes('share') || h.includes('concentration') || h.includes('percent')) colMap['share'] = c;
       }
-      if (pctColIdx >= 0) continue;
+      if (Object.keys(colMap).length >= 2) {
+        headerRow = row;
+        continue;
+      } else {
+        colMap = {};
+      }
     }
 
-    if (inUserSection && pctColIdx >= 0) {
-      const val = num(row[pctColIdx]);
-      // If value > 1, it's already a percentage; if <= 1, multiply by 100
-      const pct = val > 1 ? val : val * 100;
-      if (pct > 50) count++;
-    }
+    if (inUserSection && headerRow) {
+      const row = grid[r];
+      const c0 = str(row?.[0]).toLowerCase();
+      if (c0 && (c0.includes('risk') || c0.includes('market') || c0.includes('sport') || c0.includes('rejection'))) break;
+      // Skip empty rows
+      const nick = str(row?.[colMap['nickname']]);
+      const srcId = str(row?.[colMap['sourceId']]);
+      if (!nick && !srcId) continue;
 
-    // Stop at next section
-    if (inUserSection && cell0 && !cell0.includes('user') && (cell0.includes('risk') || cell0.includes('market') || cell0.includes('sport')) && pctColIdx >= 0) {
-      break;
+      const share = num(row?.[colMap['share']]);
+      const sharePct = share > 1 ? share : share * 100;
+      const userTurnover = Math.round(num(row?.[colMap['turnover']]));
+      const userPnl = Math.round(num(row?.[colMap['pnl']]));
+      const userMargin = colMap['margin'] !== undefined ? num(row?.[colMap['margin']]) : (userTurnover > 0 ? (userPnl / userTurnover) * 100 : 0);
+
+      users.push({
+        userId: srcId || nick.slice(0, 8),
+        username: nick || srcId,
+        bets: Math.round(num(row?.[colMap['bets']])),
+        turnover: userTurnover,
+        pnl: userPnl,
+        margin: userMargin > 1 || userMargin < -1 ? userMargin : userMargin * 100,
+        concentrationRisk: (sharePct > 50 ? 'high' : sharePct > 20 ? 'medium' : 'low') as 'high' | 'medium' | 'low',
+      });
     }
   }
 
-  return count;
+  return users;
 }
 
 export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
@@ -352,20 +383,26 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
   }
   sportsBreakdown.sort((a, b) => b.turnover - a.turnover);
 
-  // User summaries
-  const userSummaries: UserSummary[] = [];
-  const totalUserTO = Array.from(userMap.values()).reduce((s, u) => s + u.turnover, 0);
-  for (const [username, data] of userMap) {
-    const concPct = totalUserTO > 0 ? (data.turnover / totalUserTO) * 100 : 0;
-    userSummaries.push({
-      userId: username.slice(0, 8),
-      username,
-      bets: data.bets,
-      turnover: Math.round(data.turnover),
-      pnl: Math.round(data.pnl),
-      margin: data.turnover > 0 ? (data.pnl / data.turnover) * 100 : 0,
-      concentrationRisk: (concPct > 50 ? 'high' : concPct > 20 ? 'medium' : 'low') as 'high' | 'medium' | 'low',
-    });
+  // User summaries — prefer Report sheet "Per User Summary" section, fallback to Raw Data
+  const reportUsers = extractAllUsersFromReport(reportGrid);
+  let userSummaries: UserSummary[];
+  if (reportUsers.length > 0) {
+    userSummaries = reportUsers;
+  } else {
+    userSummaries = [];
+    const totalUserTO = Array.from(userMap.values()).reduce((s, u) => s + u.turnover, 0);
+    for (const [username, data] of userMap) {
+      const concPct = totalUserTO > 0 ? (data.turnover / totalUserTO) * 100 : 0;
+      userSummaries.push({
+        userId: username.slice(0, 8),
+        username,
+        bets: data.bets,
+        turnover: Math.round(data.turnover),
+        pnl: Math.round(data.pnl),
+        margin: data.turnover > 0 ? (data.pnl / data.turnover) * 100 : 0,
+        concentrationRisk: (concPct > 50 ? 'high' : concPct > 20 ? 'medium' : 'low') as 'high' | 'medium' | 'low',
+      });
+    }
   }
   userSummaries.sort((a, b) => b.turnover - a.turnover);
 

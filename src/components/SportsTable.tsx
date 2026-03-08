@@ -22,7 +22,7 @@ const SportsTable = ({ data }: SportsTableProps) => {
                 contentStyle={{ background: 'hsl(220 18% 10%)', border: '1px solid hsl(220 14% 18%)', borderRadius: 8, color: 'hsl(210 20% 92%)' }}
                 formatter={(v: number) => [`€${v.toLocaleString()}`, 'Turnover']}
               />
-              <Bar dataKey="turnover" fill="hsl(199 89% 48%)" radius={[0, 4, 4, 0]} name="Turnover" />
+              <Bar dataKey="turnover" fill="#00e554" radius={[0, 4, 4, 0]} name="Turnover" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -41,7 +41,7 @@ const SportsTable = ({ data }: SportsTableProps) => {
               />
               <Bar dataKey="pnl" radius={[0, 4, 4, 0]} name="P&L">
                 {data.map((entry, i) => (
-                  <Cell key={i} fill={entry.pnl >= 0 ? 'hsl(142 72% 45%)' : 'hsl(0 72% 55%)'} />
+                  <Cell key={i} fill={entry.pnl >= 0 ? '#00e554' : '#ff4444'} />
                 ))}
               </Bar>
             </BarChart>

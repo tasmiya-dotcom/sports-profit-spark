@@ -30,8 +30,6 @@ function makeDemoDay(overrides: {
 
   const userSummaries = [
     { userId: 'USR001', username: '777harsh', bets: Math.round(bets * 0.3), turnover: Math.round(turnover * 0.4), pnl: Math.round(pnl * 0.5), margin: margin * 1.2, concentrationRisk: 'high' as const },
-    { userId: 'USR002', username: 'weekend_punter', bets: Math.round(bets * 0.2), turnover: Math.round(turnover * 0.25), pnl: Math.round(pnl * 0.3), margin: margin * 0.9, concentrationRisk: 'medium' as const },
-    { userId: 'USR003', username: 'casual_joe', bets: Math.round(bets * 0.15), turnover: Math.round(turnover * 0.15), pnl: Math.round(pnl * 0.1), margin: margin * 0.5, concentrationRisk: 'low' as const },
   ];
 
   const hourlyBets = Array.from({ length: 24 }, (_, h) => ({

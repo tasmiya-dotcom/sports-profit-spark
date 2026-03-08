@@ -30,9 +30,9 @@ const UserSummaryTable = ({ data }: UserSummaryTableProps) => {
                   </div>
                 </td>
                 <td>{row.bets.toLocaleString()}</td>
-                <td>${row.turnover.toLocaleString()}</td>
+                <td>€{row.turnover.toLocaleString()}</td>
                 <td className={row.pnl >= 0 ? 'value-positive' : 'value-negative'}>
-                  {row.pnl >= 0 ? '+' : ''}${row.pnl.toLocaleString()}
+                  {row.pnl >= 0 ? '+' : ''}€{Math.abs(row.pnl).toLocaleString()}
                 </td>
                 <td className={row.margin >= 0 ? 'value-positive' : 'value-negative'}>
                   {row.margin.toFixed(1)}%
