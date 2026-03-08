@@ -133,4 +133,9 @@
     box-shadow: 0 0 20px hsl(var(--primary) / 0.35), 0 0 40px hsl(var(--primary) / 0.15);
     border-color: hsl(var(--primary));
   }
+
+  .ipl-header-stripe {
+    height: 3px;
+    background: linear-gradient(90deg, hsl(var(--ipl-orange)) 0%, hsl(var(--ipl-blue)) 100%);
+  }
 }
