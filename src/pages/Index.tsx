@@ -12,7 +12,9 @@ import RejectionsTable from '@/components/RejectionsTable';
 import UserSummaryTable from '@/components/UserSummaryTable';
 import MarketPatternChart from '@/components/MarketPatternChart';
 import TopPlayerSpotlightPanel from '@/components/TopPlayerSpotlight';
+import PostMatchReports from '@/components/PostMatchReports';
 import IplMatchTracker from '@/components/IplMatchTracker';
+import AudienceInsights from '@/components/AudienceInsights';
 import { Activity, RefreshCw, CheckCircle2, AlertCircle, X, Loader2 } from 'lucide-react';
 
 const fmt = (v: number) => `€${Math.round(Math.abs(v)).toLocaleString()}`;
@@ -74,7 +76,7 @@ const Index = () => {
           <div className="flex items-center gap-3">
             <Activity className="w-6 h-6 text-primary" />
             <div>
-              <h1 className="text-lg font-bold tracking-tight uppercase"><span className="text-foreground">ARENA</span><span style={{ color: '#7ed321' }}>365</span></h1>
+              <h1 className="text-lg font-bold tracking-tight uppercase text-primary">ARENA365</h1>
               <p className="text-xs text-muted-foreground">
                 {activeData
                   ? `Viewing: ${activeData.reportLabel}`
@@ -164,6 +166,12 @@ const Index = () => {
 
         {/* Top Player Spotlight */}
         <TopPlayerSpotlightPanel player={data.topPlayer} />
+
+        {/* Audience & Engagement Insights */}
+        <AudienceInsights data={data} />
+
+        {/* Post-Match Reports */}
+        <PostMatchReports />
 
         {/* IPL Match Tracker */}
         <IplMatchTracker />
