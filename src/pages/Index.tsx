@@ -166,6 +166,9 @@ const Index = () => {
         {/* Top Player Spotlight */}
         <TopPlayerSpotlightPanel player={data.topPlayer} />
 
+        {/* Post-Match Reports */}
+        <PostMatchReports />
+
         {/* IPL Match Tracker */}
         <IplMatchTracker />
 
