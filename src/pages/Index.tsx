@@ -76,7 +76,7 @@ const Index = () => {
           <div className="flex items-center gap-3">
             <Activity className="w-6 h-6 text-primary" />
             <div>
-              <h1 className="text-lg font-bold tracking-tight uppercase text-primary">ARENA365</h1>
+              <h1 className="text-lg font-bold tracking-tight uppercase"><span className="text-foreground">ARENA</span><span style={{ color: '#7ed321' }}>365</span></h1>
               <p className="text-xs text-muted-foreground">
                 {activeData
                   ? `Viewing: ${activeData.reportLabel}`
