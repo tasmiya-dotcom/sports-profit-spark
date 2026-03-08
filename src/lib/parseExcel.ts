@@ -143,16 +143,20 @@ function extractRiskAlerts(grid: any[][]): RiskAlert[] {
   }
 
   // Read only the rows between the header and the next section
+  const WARNING_KEYWORDS = ['CONCENTRATION', 'CCF'];
+  const INFO_KEYWORDS = ['REPEATED', 'REJECTIONS', 'LATE', 'SHARP'];
+  const ALL_KEYWORDS = [...WARNING_KEYWORDS, ...INFO_KEYWORDS];
+
   for (let r = headerRow + 1; r < endRow; r++) {
     const colB = str(grid[r]?.[1]).trim();
     if (!colB) continue;
 
-    if (colB.includes('⚠')) {
-      alerts.push({ type: 'warning', message: colB.replace(/⚠/g, '').trim() });
-    } else if (colB.includes('ℹ')) {
-      alerts.push({ type: 'info', message: colB.replace(/ℹ/g, '').trim() });
-    }
-    // Ignore rows without ⚠ or ℹ — they are not real alerts
+    const upper = colB.toUpperCase();
+    const isAlert = ALL_KEYWORDS.some(kw => upper.includes(kw));
+    if (!isAlert) continue;
+
+    const isWarning = WARNING_KEYWORDS.some(kw => upper.includes(kw));
+    alerts.push({ type: isWarning ? 'warning' : 'info', message: colB });
   }
 
   return alerts;
