@@ -14,7 +14,10 @@ const STORAGE_KEY = 'sportsbook_history';
 function loadHistory(): HistoryEntry[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const entries: HistoryEntry[] = JSON.parse(raw);
+    // Filter out stale entries that lack the new kpiSummary field
+    return entries.filter(e => e.data?.kpiSummary);
   } catch {
     return [];
   }

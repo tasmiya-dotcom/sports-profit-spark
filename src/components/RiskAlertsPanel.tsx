@@ -6,7 +6,8 @@ interface RiskAlertsPanelProps {
 }
 
 const RiskAlertsPanel = ({ alerts }: RiskAlertsPanelProps) => {
-  const hasAlerts = alerts.length > 0;
+  const safeAlerts = alerts ?? [];
+  const hasAlerts = safeAlerts.length > 0;
 
   return (
     <div className="kpi-card">
@@ -18,7 +19,7 @@ const RiskAlertsPanel = ({ alerts }: RiskAlertsPanelProps) => {
         </div>
       ) : (
         <div className="space-y-2">
-          {alerts.map((alert, i) => (
+          {safeAlerts.map((alert, i) => (
             <div
               key={i}
               className={`flex items-start gap-2 px-3 py-2.5 rounded-lg border text-sm ${
