@@ -29,8 +29,8 @@ const RejectionsTable = ({ data }: RejectionsTableProps) => {
                 </td>
                 <td>{row.count.toLocaleString()}</td>
                 <td className="value-warning">€{row.blockedTurnover.toLocaleString()}</td>
-                <td className={row.potentialPnl >= 0 ? 'value-positive' : 'value-negative'}>
-                  {row.potentialPnl >= 0 ? '+' : ''}€{row.potentialPnl.toLocaleString()}
+                <td className={(row.potentialPnl ?? 0) >= 0 ? 'value-positive' : 'value-negative'}>
+                  {(row.potentialPnl ?? 0) >= 0 ? '+' : ''}€{(row.potentialPnl ?? 0).toLocaleString()}
                 </td>
                 <td>{row.percentage.toFixed(2)}%</td>
               </tr>
