@@ -144,6 +144,15 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            <button
+              onClick={handleDownloadPDF}
+              disabled={isExporting}
+              className="flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-md border transition-colors disabled:opacity-50"
+              style={{ borderColor: '#00e554', color: '#00e554', background: 'transparent' }}
+            >
+              {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              {isExporting ? 'Generating…' : 'Download Report'}
+            </button>
             {history.length > 2 && (
               <button
                 onClick={handleResetAll}
