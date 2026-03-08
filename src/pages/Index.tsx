@@ -144,7 +144,7 @@ const Index = () => {
             value={fmtSigned(kpi.pnl)}
             trend={kpi.pnl >= 0 ? 'up' : 'down'}
             icon="profit"
-            subtitle={activeData ? activeData.reportLabel : hasHistory ? `${history.length} days` : 'Demo'}
+            subtitle={activeData ? activeData.reportLabel : `${history.length} days`}
           />
           <KPICard title="Turnover" value={fmt(kpi.turnover)} icon="bets" />
           <KPICard title="Avg Margin" value={`${kpi.margin.toFixed(2)}%`} trend={kpi.margin >= 0 ? 'up' : 'down'} icon="margin" />
