@@ -275,6 +275,24 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
     const pnl = num(row['Pnl']) || num(row['P&L']) || num(row['Distributed P&L']);
     const sport = str(row['Sport']);
     const nickname = str(row['Nickname']);
+    const market = str(row['Market'] || row['Market Group'] || row['Mg'] || '');
+
+    // Extract hour from Date/Time column
+    const dtRaw = row['Date/Time'] || row['Date'] || row['DateTime'] || row['Timestamp'] || '';
+    if (dtRaw) {
+      let hour = -1;
+      if (typeof dtRaw === 'number') {
+        // Excel serial date — fractional part is time
+        const frac = dtRaw % 1;
+        hour = Math.floor(frac * 24);
+      } else {
+        const timeMatch = String(dtRaw).match(/(\d{1,2}):(\d{2})/);
+        if (timeMatch) hour = parseInt(timeMatch[1], 10);
+      }
+      if (hour >= 0 && hour < 24) hourMap.set(hour, (hourMap.get(hour) || 0) + 1);
+    }
+
+    if (market) rawMarketMap.set(market, (rawMarketMap.get(market) || 0) + 1);
 
     rawTotalPnL += pnl;
     rawTotalTurnover += stake;
