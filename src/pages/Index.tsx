@@ -11,7 +11,7 @@ import SportsTable from '@/components/SportsTable';
 import RejectionsTable from '@/components/RejectionsTable';
 import UserSummaryTable from '@/components/UserSummaryTable';
 import MarketPatternChart from '@/components/MarketPatternChart';
-import RiskAlertsPanel from '@/components/RiskAlertsPanel';
+import TopPlayerSpotlightPanel from '@/components/TopPlayerSpotlight';
 import { Activity, RefreshCw, CheckCircle2, AlertCircle, X, Loader2 } from 'lucide-react';
 
 const fmt = (v: number) => `€${Math.round(Math.abs(v)).toLocaleString()}`;
