@@ -262,6 +262,8 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
 
   const userMap = new Map<string, { bets: number; turnover: number; pnl: number }>();
   const sportMap = new Map<string, { bets: number; turnover: number; pnl: number }>();
+  const hourMap = new Map<number, number>();
+  const rawMarketMap = new Map<string, number>();
   let liveBets = 0, prematchBets = 0, liveTurnover = 0, prematchTurnover = 0;
   let rawTotalPnL = 0, rawTotalTurnover = 0;
 
