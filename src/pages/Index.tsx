@@ -26,7 +26,7 @@ const Index = () => {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
+  const [kpiModal, setKpiModal] = useState<'pnl' | 'turnover' | 'margin' | 'bets' | 'rejections' | 'highRisk' | null>(null);
   // History always has at least the 2 default entries
   const data: DashboardData = activeData ?? history[0].data;
   const kpi = data.kpiSummary;
