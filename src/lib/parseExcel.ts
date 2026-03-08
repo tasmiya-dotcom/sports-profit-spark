@@ -477,6 +477,9 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
     topPlayer = { ...topPlayerFromReport, ccf };
   }
 
+  const hourlyBets = Array.from({ length: 24 }, (_, h) => ({ hour: h, count: hourMap.get(h) || 0 }));
+  const rawMarkets = Array.from(rawMarketMap, ([market, count]) => ({ market, count })).sort((a, b) => b.count - a.count);
+
   return {
     reportDate,
     reportLabel,
@@ -489,6 +492,8 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
     marketPatterns,
     topPlayer,
     uploadDate: new Date().toISOString(),
+    hourlyBets,
+    rawMarkets,
   };
 }
 
