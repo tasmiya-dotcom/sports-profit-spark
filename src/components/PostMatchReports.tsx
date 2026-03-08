@@ -138,7 +138,6 @@ const PostMatchReports = () => {
       {/* Header */}
       <button onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-card/80 transition-colors">
         <div className="flex items-center gap-2.5">
-          <Trophy className="w-5 h-5 text-primary" />
           <span className="text-sm font-bold tracking-wider uppercase text-foreground">🏆 POST-MATCH REPORTS</span>
           <span className="text-xs text-muted-foreground ml-1">({matches.length})</span>
         </div>
