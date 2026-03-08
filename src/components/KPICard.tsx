@@ -6,6 +6,7 @@ interface KPICardProps {
   subtitle?: string;
   trend?: 'up' | 'down' | 'neutral';
   icon?: 'profit' | 'bets' | 'margin' | 'warning';
+  onClick?: () => void;
 }
 
 const iconMap = {
