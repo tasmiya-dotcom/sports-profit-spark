@@ -25,6 +25,7 @@ export interface RejectionReason {
   reason: string;
   count: number;
   blockedTurnover: number;
+  potentialPnl: number;
   percentage: number;
 }
 
@@ -45,12 +46,30 @@ export interface MarketPattern {
   pnl: number;
 }
 
+export interface RiskAlert {
+  type: 'warning' | 'info';
+  message: string;
+}
+
+export interface KPISummary {
+  pnl: number;
+  turnover: number;
+  bets: number;
+  margin: number;
+  rejections: number;
+  highRiskUsers: number;
+}
+
 export interface DashboardData {
+  reportDate: string; // ISO date string e.g. "2026-03-07"
+  reportLabel: string; // e.g. "07 Mar 2026"
+  kpiSummary: KPISummary;
   dailyPnL: DailyPnL[];
   betSplit: BetSplit[];
   sportsBreakdown: SportBreakdown[];
   rejectionReasons: RejectionReason[];
   userSummaries: UserSummary[];
   marketPatterns: MarketPattern[];
+  riskAlerts: RiskAlert[];
   uploadDate: string;
 }

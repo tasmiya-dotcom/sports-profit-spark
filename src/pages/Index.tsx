@@ -11,29 +11,47 @@ import SportsTable from '@/components/SportsTable';
 import RejectionsTable from '@/components/RejectionsTable';
 import UserSummaryTable from '@/components/UserSummaryTable';
 import MarketPatternChart from '@/components/MarketPatternChart';
-import { Activity, RefreshCw, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import RiskAlertsPanel from '@/components/RiskAlertsPanel';
+import { Activity, RefreshCw, CheckCircle2, AlertCircle, X, Loader2 } from 'lucide-react';
+
+const fmt = (v: number) => `€${Math.round(Math.abs(v)).toLocaleString()}`;
+const fmtSigned = (v: number) => `${v >= 0 ? '+' : '-'}€${Math.round(Math.abs(v)).toLocaleString()}`;
 
 const Index = () => {
   const { history, selectedId, setSelectedId, addEntry, deleteEntry, resetAll, activeData } = useDashboardHistory();
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Use history data if available, otherwise demo
-  const isUsingHistory = history.length > 0 && activeData !== null;
-  const data: DashboardData = isUsingHistory ? activeData : generateDemoData();
+  const hasHistory = history.length > 0;
+  const demo = generateDemoData();
+
+  // When a specific day is selected, show it. Otherwise show the first day or demo.
+  const data: DashboardData = activeData
+    ? activeData
+    : hasHistory
+      ? history[0].data
+      : demo;
 
   const handleFileLoad = (buffer: ArrayBuffer, fileName: string) => {
     setUploadError(null);
     setUploadSuccess(null);
-    try {
-      const parsed = parseExcelFile(buffer);
-      addEntry(parsed, fileName);
-      setUploadSuccess(`"${fileName}" loaded successfully`);
-      setTimeout(() => setUploadSuccess(null), 4000);
-    } catch (e: any) {
-      console.error('Failed to parse Excel:', e);
-      setUploadError(`Failed to load "${fileName}": ${e?.message || 'Unknown error. Ensure the file has sheets: Raw Data, Market Pattern, Rejection Detail.'}`);
-    }
+    setIsLoading(true);
+
+    // Use setTimeout to let the loading spinner render
+    setTimeout(() => {
+      try {
+        const parsed = parseExcelFile(buffer);
+        addEntry(parsed, fileName);
+        setUploadSuccess(`"${fileName}" loaded — ${parsed.reportLabel}`);
+        setTimeout(() => setUploadSuccess(null), 4000);
+      } catch (e: any) {
+        console.error('Failed to parse Excel:', e);
+        setUploadError(`Failed to load "${fileName}": ${e?.message || 'Unknown error. Ensure the file has sheets: Report, Raw Data, Market Pattern, Rejection Detail.'}`);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 50);
   };
 
   const handleResetAll = () => {
@@ -42,12 +60,7 @@ const Index = () => {
     setUploadSuccess(null);
   };
 
-  const totalPnL = data.dailyPnL.reduce((s, d) => s + d.pnl, 0);
-  const totalTurnover = data.dailyPnL.reduce((s, d) => s + d.turnover, 0);
-  const totalBets = data.betSplit.reduce((s, d) => s + d.liveBets + d.prematchBets, 0);
-  const avgMargin = totalTurnover > 0 ? (totalPnL / totalTurnover) * 100 : 0;
-  const highRiskUsers = data.userSummaries.filter(u => u.concentrationRisk === 'high').length;
-  const totalRejections = data.rejectionReasons.reduce((s, r) => s + r.count, 0);
+  const kpi = data.kpiSummary;
 
   return (
     <div className="min-h-screen bg-background">
@@ -59,16 +72,16 @@ const Index = () => {
             <div>
               <h1 className="text-lg font-bold tracking-tight">Sportsbook Dashboard</h1>
               <p className="text-xs text-muted-foreground">
-                {isUsingHistory
-                  ? selectedId
-                    ? `Viewing: ${history.find(e => e.id === selectedId)?.label}`
-                    : `All Days (${history.length} uploads merged)`
-                  : 'Demo Data'}
+                {activeData
+                  ? `Viewing: ${activeData.reportLabel}`
+                  : hasHistory
+                    ? selectedId === null ? 'All Days Overview' : 'Select a day'
+                    : 'Demo Data'}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            {isUsingHistory && (
+            {hasHistory && (
               <button
                 onClick={handleResetAll}
                 className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -83,6 +96,16 @@ const Index = () => {
           </div>
         </div>
       </header>
+
+      {/* Loading overlay */}
+      {isLoading && (
+        <div className="max-w-[1600px] mx-auto px-6 pt-4">
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-sm font-medium">
+            <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+            Parsing Excel file…
+          </div>
+        </div>
+      )}
 
       {/* Success banner */}
       {uploadSuccess && (
@@ -123,22 +146,32 @@ const Index = () => {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <KPICard
             title="Total P&L"
-            value={`${totalPnL >= 0 ? '+' : ''}$${totalPnL.toLocaleString()}`}
-            trend={totalPnL >= 0 ? 'up' : 'down'}
+            value={fmtSigned(kpi.pnl)}
+            trend={kpi.pnl >= 0 ? 'up' : 'down'}
             icon="profit"
-            subtitle={selectedId ? 'Single day' : `${history.length || 14}-day period`}
+            subtitle={activeData ? activeData.reportLabel : hasHistory ? `${history.length} days` : 'Demo'}
           />
-          <KPICard title="Turnover" value={`$${totalTurnover.toLocaleString()}`} icon="bets" />
-          <KPICard title="Avg Margin" value={`${avgMargin.toFixed(2)}%`} trend={avgMargin >= 0 ? 'up' : 'down'} icon="margin" />
-          <KPICard title="Total Bets" value={totalBets.toLocaleString()} icon="bets" />
-          <KPICard title="Rejections" value={totalRejections.toLocaleString()} icon="warning" trend="neutral" />
-          <KPICard title="High Risk Users" value={highRiskUsers.toString()} icon="warning" trend={highRiskUsers > 0 ? 'down' : 'neutral'} />
+          <KPICard title="Turnover" value={fmt(kpi.turnover)} icon="bets" />
+          <KPICard title="Avg Margin" value={`${kpi.margin.toFixed(2)}%`} trend={kpi.margin >= 0 ? 'up' : 'down'} icon="margin" />
+          <KPICard title="Total Bets" value={kpi.bets.toLocaleString()} icon="bets" />
+          <KPICard title="Rejections" value={kpi.rejections.toLocaleString()} icon="warning" trend="neutral" />
+          <KPICard title="High Risk Users" value={kpi.highRiskUsers.toString()} icon="warning" trend={kpi.highRiskUsers > 0 ? 'down' : 'neutral'} />
         </div>
+
+        {/* Risk Alerts */}
+        <RiskAlertsPanel alerts={data.riskAlerts} />
 
         {/* P&L + Bet Split row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <PnLChart data={data.dailyPnL} />
+            {hasHistory ? (
+              <PnLChart history={history} selectedId={selectedId} onSelectDay={setSelectedId} />
+            ) : (
+              <div className="kpi-card">
+                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Daily P&L</h3>
+                <p className="text-xs text-muted-foreground text-center py-16">Upload Excel files to see daily P&L bars</p>
+              </div>
+            )}
           </div>
           <BetSplitChart data={data.betSplit} />
         </div>
