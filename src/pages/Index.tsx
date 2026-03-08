@@ -9,7 +9,7 @@ import SportsTable from '@/components/SportsTable';
 import RejectionsTable from '@/components/RejectionsTable';
 import UserSummaryTable from '@/components/UserSummaryTable';
 import MarketPatternChart from '@/components/MarketPatternChart';
-import { Activity, RefreshCw, FileSpreadsheet, X } from 'lucide-react';
+import { Activity, RefreshCw, FileSpreadsheet, X, CheckCircle2, AlertCircle } from 'lucide-react';
 
 const mergeDashboardData = (existing: DashboardData, incoming: DashboardData): DashboardData => {
   // Merge daily P&L (combine by date, add new dates)
@@ -117,22 +117,28 @@ const mergeDashboardData = (existing: DashboardData, incoming: DashboardData): D
 const Index = () => {
   const [data, setData] = useState<DashboardData>(generateDemoData);
   const [isFirstUpload, setIsFirstUpload] = useState(true);
-  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<{ name: string; date: Date }[]>([]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
   const handleFileLoad = (buffer: ArrayBuffer, fileName: string) => {
+    setUploadError(null);
+    setUploadSuccess(null);
     try {
       const parsed = parseExcelFile(buffer);
       if (isFirstUpload) {
         setData(parsed);
         setIsFirstUpload(false);
-        setUploadedFiles([fileName]);
+        setUploadedFiles([{ name: fileName, date: new Date() }]);
       } else {
         setData(prev => mergeDashboardData(prev, parsed));
-        setUploadedFiles(prev => [...prev, fileName]);
+        setUploadedFiles(prev => [...prev, { name: fileName, date: new Date() }]);
       }
+      setUploadSuccess(`"${fileName}" loaded successfully`);
+      setTimeout(() => setUploadSuccess(null), 4000);
     } catch (e: any) {
       console.error('Failed to parse Excel:', e);
-      alert('Failed to parse Excel file: ' + (e?.message || 'Unknown error'));
+      setUploadError(`Failed to load "${fileName}": ${e?.message || 'Unknown error. Ensure the file has sheets: Raw Data, Market Pattern, Rejection Detail.'}`);
     }
   };
 
@@ -166,7 +172,7 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => { setData(generateDemoData()); setIsFirstUpload(true); setUploadedFiles([]); }}
+              onClick={() => { setData(generateDemoData()); setIsFirstUpload(true); setUploadedFiles([]); setUploadError(null); setUploadSuccess(null); }}
               className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" />
@@ -179,21 +185,50 @@ const Index = () => {
         </div>
       </header>
 
+      {/* Success banner */}
+      {uploadSuccess && (
+        <div className="max-w-[1600px] mx-auto px-6 pt-4">
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-sm font-medium">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            {uploadSuccess}
+          </div>
+        </div>
+      )}
+
+      {/* Error banner */}
+      {uploadError && (
+        <div className="max-w-[1600px] mx-auto px-6 pt-4">
+          <div className="flex items-center justify-between gap-2 px-4 py-2.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              {uploadError}
+            </div>
+            <button onClick={() => setUploadError(null)} className="hover:opacity-70">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {uploadedFiles.length > 0 && (
         <div className="max-w-[1600px] mx-auto px-6 pt-4">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-medium text-muted-foreground">Loaded files:</span>
-            {uploadedFiles.map((name, i) => (
+            {uploadedFiles.map((file, i) => (
               <span
                 key={i}
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium"
+                title={`Uploaded ${file.date.toLocaleString()}`}
               >
                 <FileSpreadsheet className="w-3 h-3" />
-                {name}
+                {file.name}
+                <span className="text-muted-foreground font-normal">
+                  {file.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
               </span>
             ))}
             <button
-              onClick={() => { setUploadedFiles([]); setData(generateDemoData()); setIsFirstUpload(true); }}
+              onClick={() => { setUploadedFiles([]); setData(generateDemoData()); setIsFirstUpload(true); setUploadError(null); }}
               className="text-xs text-muted-foreground hover:text-destructive transition-colors ml-1"
               title="Clear all files"
             >
