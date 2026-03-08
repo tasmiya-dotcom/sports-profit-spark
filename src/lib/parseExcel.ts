@@ -262,8 +262,6 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
 
   const userMap = new Map<string, { bets: number; turnover: number; pnl: number }>();
   const sportMap = new Map<string, { bets: number; turnover: number; pnl: number }>();
-  const hourMap = new Map<number, number>();
-  const rawMarketMap = new Map<string, number>();
   let liveBets = 0, prematchBets = 0, liveTurnover = 0, prematchTurnover = 0;
   let rawTotalPnL = 0, rawTotalTurnover = 0;
 
@@ -275,24 +273,6 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
     const pnl = num(row['Pnl']) || num(row['P&L']) || num(row['Distributed P&L']);
     const sport = str(row['Sport']);
     const nickname = str(row['Nickname']);
-    const market = str(row['Market'] || row['Market Group'] || row['Mg'] || '');
-
-    // Extract hour from Date/Time column
-    const dtRaw = row['Date/Time'] || row['Date'] || row['DateTime'] || row['Timestamp'] || '';
-    if (dtRaw) {
-      let hour = -1;
-      if (typeof dtRaw === 'number') {
-        // Excel serial date — fractional part is time
-        const frac = dtRaw % 1;
-        hour = Math.floor(frac * 24);
-      } else {
-        const timeMatch = String(dtRaw).match(/(\d{1,2}):(\d{2})/);
-        if (timeMatch) hour = parseInt(timeMatch[1], 10);
-      }
-      if (hour >= 0 && hour < 24) hourMap.set(hour, (hourMap.get(hour) || 0) + 1);
-    }
-
-    if (market) rawMarketMap.set(market, (rawMarketMap.get(market) || 0) + 1);
 
     rawTotalPnL += pnl;
     rawTotalTurnover += stake;
@@ -477,9 +457,6 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
     topPlayer = { ...topPlayerFromReport, ccf };
   }
 
-  const hourlyBets = Array.from({ length: 24 }, (_, h) => ({ hour: h, count: hourMap.get(h) || 0 }));
-  const rawMarkets = Array.from(rawMarketMap, ([market, count]) => ({ market, count })).sort((a, b) => b.count - a.count);
-
   return {
     reportDate,
     reportLabel,
@@ -492,8 +469,6 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
     marketPatterns,
     topPlayer,
     uploadDate: new Date().toISOString(),
-    hourlyBets,
-    rawMarkets,
   };
 }
 
@@ -560,14 +535,6 @@ export function generateDemoData(): DashboardData {
     return { market, count, turnover: Math.round(turnover), pnl: Math.round(pnl) };
   }).sort((a, b) => b.count - a.count);
 
-  const hourlyBets = Array.from({ length: 24 }, (_, h) => ({
-    hour: h,
-    count: Math.round(h >= 8 && h <= 23 ? (30 + Math.random() * 200) * (h >= 18 && h <= 21 ? 2.5 : 1) : Math.random() * 20),
-  }));
-  const rawMarkets = ['Match Winner', 'Over/Under 2.5', 'Asian Handicap', 'Both Teams to Score', 'Total Goals', 'First Goalscorer', 'Innings Runs', 'Handicap -1.5']
-    .map(m => ({ market: m, count: Math.round(30 + Math.random() * 500) }))
-    .sort((a, b) => b.count - a.count);
-
   return {
     reportDate: new Date().toISOString().split('T')[0],
     reportLabel: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
@@ -589,7 +556,5 @@ export function generateDemoData(): DashboardData {
       ccf: 0.85,
     },
     uploadDate: new Date().toISOString(),
-    hourlyBets,
-    rawMarkets,
   };
 }

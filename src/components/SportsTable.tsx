@@ -15,14 +15,14 @@ const SportsTable = ({ data }: SportsTableProps) => {
           <p className="text-xs text-muted-foreground mb-2">Turnover by Sport</p>
           <ResponsiveContainer width="100%" height={Math.max(200, data.length * 36)}>
             <BarChart data={data} layout="vertical" margin={{ left: 80, right: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis type="number" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`} />
-              <YAxis type="category" dataKey="sport" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} width={75} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 14% 18%)" />
+              <XAxis type="number" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`} />
+              <YAxis type="category" dataKey="sport" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} width={75} />
               <Tooltip
-                contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, color: 'hsl(var(--foreground))' }}
+                contentStyle={{ background: 'hsl(220 18% 10%)', border: '1px solid hsl(220 14% 18%)', borderRadius: 8, color: 'hsl(210 20% 92%)' }}
                 formatter={(v: number) => [`€${v.toLocaleString()}`, 'Turnover']}
               />
-              <Bar dataKey="turnover" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} name="Turnover" />
+              <Bar dataKey="turnover" fill="hsl(199 89% 48%)" radius={[0, 4, 4, 0]} name="Turnover" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -32,16 +32,16 @@ const SportsTable = ({ data }: SportsTableProps) => {
           <p className="text-xs text-muted-foreground mb-2">P&L by Sport</p>
           <ResponsiveContainer width="100%" height={Math.max(200, data.length * 36)}>
             <BarChart data={data} layout="vertical" margin={{ left: 80, right: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis type="number" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`} />
-              <YAxis type="category" dataKey="sport" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} width={75} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 14% 18%)" />
+              <XAxis type="number" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`} />
+              <YAxis type="category" dataKey="sport" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} width={75} />
               <Tooltip
-                contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, color: 'hsl(var(--foreground))' }}
+                contentStyle={{ background: 'hsl(220 18% 10%)', border: '1px solid hsl(220 14% 18%)', borderRadius: 8, color: 'hsl(210 20% 92%)' }}
                 formatter={(v: number) => [`€${v.toLocaleString()}`, 'P&L']}
               />
               <Bar dataKey="pnl" radius={[0, 4, 4, 0]} name="P&L">
                 {data.map((entry, i) => (
-                  <Cell key={i} fill={entry.pnl >= 0 ? 'hsl(var(--chart-profit))' : 'hsl(var(--chart-loss))'} />
+                  <Cell key={i} fill={entry.pnl >= 0 ? 'hsl(142 72% 45%)' : 'hsl(0 72% 55%)'} />
                 ))}
               </Bar>
             </BarChart>

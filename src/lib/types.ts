@@ -64,16 +64,6 @@ export interface KPISummary {
   highRiskUsers: number;
 }
 
-export interface HourlyBets {
-  hour: number;
-  count: number;
-}
-
-export interface RawMarketEntry {
-  market: string;
-  count: number;
-}
-
 export interface DashboardData {
   reportDate: string;
   reportLabel: string;
@@ -86,6 +76,4 @@ export interface DashboardData {
   marketPatterns: MarketPattern[];
   topPlayer: TopPlayerSpotlight | null;
   uploadDate: string;
-  hourlyBets: HourlyBets[];
-  rawMarkets: RawMarketEntry[];
 }

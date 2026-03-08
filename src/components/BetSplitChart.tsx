@@ -18,7 +18,7 @@ const BetSplitChart = ({ data }: BetSplitChartProps) => {
     { name: 'Pre-match', value: d.prematchTurnover },
   ];
 
-  const COLORS = ['hsl(var(--chart-live))', 'hsl(var(--chart-prematch))'];
+  const COLORS = ['hsl(199 89% 48%)', 'hsl(262 60% 58%)'];
 
   return (
     <div className="kpi-card">
@@ -31,7 +31,7 @@ const BetSplitChart = ({ data }: BetSplitChartProps) => {
               <Pie data={betsData} cx="50%" cy="50%" innerRadius={40} outerRadius={65} dataKey="value" strokeWidth={0}>
                 {betsData.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
               </Pie>
-              <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, color: 'hsl(var(--foreground))' }} />
+              <Tooltip contentStyle={{ background: 'hsl(220 18% 10%)', border: '1px solid hsl(220 14% 18%)', borderRadius: 8, color: 'hsl(210 20% 92%)' }} />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -42,7 +42,7 @@ const BetSplitChart = ({ data }: BetSplitChartProps) => {
               <Pie data={turnoverData} cx="50%" cy="50%" innerRadius={40} outerRadius={65} dataKey="value" strokeWidth={0}>
                 {turnoverData.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
               </Pie>
-              <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, color: 'hsl(var(--foreground))' }} formatter={(v: number) => `€${v.toLocaleString()}`} />
+              <Tooltip contentStyle={{ background: 'hsl(220 18% 10%)', border: '1px solid hsl(220 14% 18%)', borderRadius: 8, color: 'hsl(210 20% 92%)' }} formatter={(v: number) => `€${v.toLocaleString()}`} />
             </PieChart>
           </ResponsiveContainer>
         </div>
