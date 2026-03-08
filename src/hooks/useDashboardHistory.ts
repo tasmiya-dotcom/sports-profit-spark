@@ -1,23 +1,25 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import type { DashboardData } from '@/lib/types';
+import { DEFAULT_ENTRIES } from '@/lib/defaultData';
 
 export interface HistoryEntry {
-  id: string; // reportDate ISO e.g. "2026-03-07"
-  label: string; // e.g. "07 Mar 2026"
+  id: string;
+  label: string;
   fileName: string;
   uploadedAt: string;
   data: DashboardData;
+  isDefault?: boolean;
 }
 
 const STORAGE_KEY = 'sportsbook_history';
+const DEFAULT_IDS = new Set(DEFAULT_ENTRIES.map(e => e.id));
 
 function loadHistory(): HistoryEntry[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const entries: HistoryEntry[] = JSON.parse(raw);
-    // Filter out stale entries that lack the new kpiSummary field
-    return entries.filter(e => e.data?.kpiSummary);
+    return entries.filter(e => e.data?.kpiSummary && !DEFAULT_IDS.has(e.id));
   } catch {
     return [];
   }
@@ -25,28 +27,37 @@ function loadHistory(): HistoryEntry[] {
 
 function saveHistory(entries: HistoryEntry[]) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    // Only persist non-default entries
+    const toSave = entries.filter(e => !e.isDefault);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
   } catch (e) {
     console.warn('Failed to save history to localStorage:', e);
   }
 }
 
 export function useDashboardHistory() {
-  const [history, setHistory] = useState<HistoryEntry[]>(loadHistory);
+  const [uploadedHistory, setUploadedHistory] = useState<HistoryEntry[]>(loadHistory);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  // Always merge defaults + uploaded, sorted by date
+  const history = useMemo(() => {
+    const merged = [...DEFAULT_ENTRIES, ...uploadedHistory];
+    return merged.sort((a, b) => a.id.localeCompare(b.id));
+  }, [uploadedHistory]);
+
   useEffect(() => {
-    saveHistory(history);
-  }, [history]);
+    saveHistory(uploadedHistory);
+  }, [uploadedHistory]);
 
   const addEntry = useCallback((data: DashboardData, fileName: string) => {
     const id = data.reportDate;
     const label = data.reportLabel;
 
-    setHistory(prev => {
-      // Check for duplicate date — reject if already exists
+    // Don't overwrite default entries
+    if (DEFAULT_IDS.has(id)) return;
+
+    setUploadedHistory(prev => {
       if (prev.find(e => e.id === id)) {
-        // Replace existing entry for that date (re-upload)
         return prev.map(e =>
           e.id === id
             ? { ...e, data, fileName, uploadedAt: new Date().toISOString() }
@@ -59,12 +70,14 @@ export function useDashboardHistory() {
   }, []);
 
   const deleteEntry = useCallback((id: string) => {
-    setHistory(prev => prev.filter(e => e.id !== id));
+    // Don't delete default entries
+    if (DEFAULT_IDS.has(id)) return;
+    setUploadedHistory(prev => prev.filter(e => e.id !== id));
     if (selectedId === id) setSelectedId(null);
   }, [selectedId]);
 
   const resetAll = useCallback(() => {
-    setHistory([]);
+    setUploadedHistory([]);
     setSelectedId(null);
     localStorage.removeItem(STORAGE_KEY);
   }, []);
