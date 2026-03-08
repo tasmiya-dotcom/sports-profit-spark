@@ -41,7 +41,7 @@ const SportsTable = ({ data }: SportsTableProps) => {
               />
               <Bar dataKey="pnl" radius={[0, 4, 4, 0]} name="P&L">
                 {data.map((entry, i) => (
-                  <Cell key={i} fill={entry.pnl >= 0 ? 'hsl(142 72% 45%)' : 'hsl(0 72% 55%)'} />
+                  <Cell key={i} fill={entry.pnl >= 0 ? '#00e554' : '#ff4444'} />
                 ))}
               </Bar>
             </BarChart>
