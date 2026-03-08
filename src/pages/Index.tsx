@@ -117,22 +117,28 @@ const mergeDashboardData = (existing: DashboardData, incoming: DashboardData): D
 const Index = () => {
   const [data, setData] = useState<DashboardData>(generateDemoData);
   const [isFirstUpload, setIsFirstUpload] = useState(true);
-  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<{ name: string; date: Date }[]>([]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
   const handleFileLoad = (buffer: ArrayBuffer, fileName: string) => {
+    setUploadError(null);
+    setUploadSuccess(null);
     try {
       const parsed = parseExcelFile(buffer);
       if (isFirstUpload) {
         setData(parsed);
         setIsFirstUpload(false);
-        setUploadedFiles([fileName]);
+        setUploadedFiles([{ name: fileName, date: new Date() }]);
       } else {
         setData(prev => mergeDashboardData(prev, parsed));
-        setUploadedFiles(prev => [...prev, fileName]);
+        setUploadedFiles(prev => [...prev, { name: fileName, date: new Date() }]);
       }
+      setUploadSuccess(`"${fileName}" loaded successfully`);
+      setTimeout(() => setUploadSuccess(null), 4000);
     } catch (e: any) {
       console.error('Failed to parse Excel:', e);
-      alert('Failed to parse Excel file: ' + (e?.message || 'Unknown error'));
+      setUploadError(`Failed to load "${fileName}": ${e?.message || 'Unknown error. Ensure the file has sheets: Raw Data, Market Pattern, Rejection Detail.'}`);
     }
   };
 
