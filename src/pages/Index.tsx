@@ -130,8 +130,9 @@ const Index = () => {
         setData(prev => mergeDashboardData(prev, parsed));
         setUploadedFiles(prev => [...prev, fileName]);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to parse Excel:', e);
+      alert('Failed to parse Excel file: ' + (e?.message || 'Unknown error'));
     }
   };
 
