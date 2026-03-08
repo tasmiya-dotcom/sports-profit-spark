@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { parseExcelFile, generateDemoData } from '@/lib/parseExcel';
+import { parseExcelFile } from '@/lib/parseExcel';
 import type { DashboardData } from '@/lib/types';
 import { useDashboardHistory } from '@/hooks/useDashboardHistory';
 import FileUpload from '@/components/FileUpload';
