@@ -57,7 +57,7 @@ const Index = () => {
     setUploadSuccess(null);
   };
 
-  const kpi = kpiSafe;
+  
 
   return (
     <div className="min-h-screen bg-background">
