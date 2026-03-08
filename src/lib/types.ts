@@ -46,9 +46,13 @@ export interface MarketPattern {
   pnl: number;
 }
 
-export interface RiskAlert {
-  type: 'warning' | 'info';
-  message: string;
+export interface TopPlayerSpotlight {
+  nickname: string;
+  sourceId: string;
+  bets: number;
+  turnover: number;
+  turnoverSharePct: number;
+  ccf: number | null;
 }
 
 export interface KPISummary {
@@ -61,8 +65,8 @@ export interface KPISummary {
 }
 
 export interface DashboardData {
-  reportDate: string; // ISO date string e.g. "2026-03-07"
-  reportLabel: string; // e.g. "07 Mar 2026"
+  reportDate: string;
+  reportLabel: string;
   kpiSummary: KPISummary;
   dailyPnL: DailyPnL[];
   betSplit: BetSplit[];
@@ -70,6 +74,6 @@ export interface DashboardData {
   rejectionReasons: RejectionReason[];
   userSummaries: UserSummary[];
   marketPatterns: MarketPattern[];
-  riskAlerts: RiskAlert[];
+  topPlayer: TopPlayerSpotlight | null;
   uploadDate: string;
 }
