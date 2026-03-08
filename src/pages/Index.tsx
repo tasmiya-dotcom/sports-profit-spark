@@ -76,7 +76,7 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            {hasHistory && (
+            {history.length > 2 && (
               <button
                 onClick={handleResetAll}
                 className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
