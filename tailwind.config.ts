@@ -69,6 +69,10 @@ export default {
           warning: "hsl(var(--chart-warning))",
           neutral: "hsl(var(--chart-neutral))",
         },
+        ipl: {
+          orange: "hsl(var(--ipl-orange))",
+          blue: "hsl(var(--ipl-blue))",
+        },
       },
       borderRadius: {
         xl: "calc(var(--radius) + 4px)",
