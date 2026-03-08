@@ -82,13 +82,13 @@ function groupMarkets(raw: { market: string; count: number }[]) {
 }
 
 const DONUT_COLORS_DIM = [
-  'hsl(var(--chart-2))',
-  'hsl(var(--chart-3))',
-  'hsl(var(--chart-4))',
-  'hsl(var(--chart-5))',
-  '#6366f1',
-  '#f59e0b',
-  '#ec4899',
+  'hsl(var(--chart-warning))',
+  'hsl(var(--chart-prematch))',
+  'hsl(var(--chart-neutral))',
+  'hsl(var(--chart-live))',
+  'hsl(var(--ipl-orange))',
+  'hsl(var(--chart-loss))',
+  '#a78bfa',
 ];
 
 const tooltipStyle = {
