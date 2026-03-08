@@ -188,6 +188,8 @@ const Index = () => {
         {/* Market Patterns */}
         <MarketPatternChart data={data.marketPatterns} />
       </main>
+
+      {kpiModal && <KPIDetailModal type={kpiModal} data={data} onClose={() => setKpiModal(null)} />}
     </div>
   );
 };
