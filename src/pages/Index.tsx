@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { parseExcelFile } from '@/lib/parseExcel';
 import type { DashboardData } from '@/lib/types';
 import { useDashboardHistory } from '@/hooks/useDashboardHistory';
@@ -16,7 +16,7 @@ import PostMatchReports from '@/components/PostMatchReports';
 import IplMatchTracker from '@/components/IplMatchTracker';
 import AudienceInsights from '@/components/AudienceInsights';
 import KPIDetailModal from '@/components/KPIDetailModal';
-import { Activity, RefreshCw, CheckCircle2, AlertCircle, X, Loader2 } from 'lucide-react';
+import { Activity, RefreshCw, CheckCircle2, AlertCircle, X, Loader2, Download } from 'lucide-react';
 
 const fmt = (v: number) => `€${Math.round(Math.abs(v)).toLocaleString()}`;
 const fmtSigned = (v: number) => `${v >= 0 ? '+' : '-'}€${Math.round(Math.abs(v)).toLocaleString()}`;
