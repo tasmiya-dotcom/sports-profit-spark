@@ -12,6 +12,7 @@ import RejectionsTable from '@/components/RejectionsTable';
 import UserSummaryTable from '@/components/UserSummaryTable';
 import MarketPatternChart from '@/components/MarketPatternChart';
 import TopPlayerSpotlightPanel from '@/components/TopPlayerSpotlight';
+import IplMatchTracker from '@/components/IplMatchTracker';
 import { Activity, RefreshCw, CheckCircle2, AlertCircle, X, Loader2 } from 'lucide-react';
 
 const fmt = (v: number) => `€${Math.round(Math.abs(v)).toLocaleString()}`;
@@ -163,6 +164,9 @@ const Index = () => {
 
         {/* Top Player Spotlight */}
         <TopPlayerSpotlightPanel player={data.topPlayer} />
+
+        {/* IPL Match Tracker */}
+        <IplMatchTracker />
 
         {/* P&L + Bet Split row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

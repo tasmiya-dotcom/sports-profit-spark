@@ -52,6 +52,9 @@
     --sidebar-border: 0 0% 12%;
     --sidebar-ring: 145 100% 45%;
 
+    --ipl-orange: 24 100% 50%;
+    --ipl-blue: 215 100% 46%;
+
     --font-mono: 'JetBrains Mono', monospace;
     --font-sans: 'Inter', sans-serif;
   }
@@ -132,5 +135,10 @@
   .glow-green {
     box-shadow: 0 0 20px hsl(var(--primary) / 0.35), 0 0 40px hsl(var(--primary) / 0.15);
     border-color: hsl(var(--primary));
+  }
+
+  .ipl-header-stripe {
+    height: 3px;
+    background: linear-gradient(90deg, hsl(var(--ipl-orange)) 0%, hsl(var(--ipl-blue)) 100%);
   }
 }
