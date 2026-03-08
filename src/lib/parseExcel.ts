@@ -383,20 +383,26 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
   }
   sportsBreakdown.sort((a, b) => b.turnover - a.turnover);
 
-  // User summaries
-  const userSummaries: UserSummary[] = [];
-  const totalUserTO = Array.from(userMap.values()).reduce((s, u) => s + u.turnover, 0);
-  for (const [username, data] of userMap) {
-    const concPct = totalUserTO > 0 ? (data.turnover / totalUserTO) * 100 : 0;
-    userSummaries.push({
-      userId: username.slice(0, 8),
-      username,
-      bets: data.bets,
-      turnover: Math.round(data.turnover),
-      pnl: Math.round(data.pnl),
-      margin: data.turnover > 0 ? (data.pnl / data.turnover) * 100 : 0,
-      concentrationRisk: (concPct > 50 ? 'high' : concPct > 20 ? 'medium' : 'low') as 'high' | 'medium' | 'low',
-    });
+  // User summaries — prefer Report sheet "Per User Summary" section, fallback to Raw Data
+  const reportUsers = extractAllUsersFromReport(reportGrid);
+  let userSummaries: UserSummary[];
+  if (reportUsers.length > 0) {
+    userSummaries = reportUsers;
+  } else {
+    userSummaries = [];
+    const totalUserTO = Array.from(userMap.values()).reduce((s, u) => s + u.turnover, 0);
+    for (const [username, data] of userMap) {
+      const concPct = totalUserTO > 0 ? (data.turnover / totalUserTO) * 100 : 0;
+      userSummaries.push({
+        userId: username.slice(0, 8),
+        username,
+        bets: data.bets,
+        turnover: Math.round(data.turnover),
+        pnl: Math.round(data.pnl),
+        margin: data.turnover > 0 ? (data.pnl / data.turnover) * 100 : 0,
+        concentrationRisk: (concPct > 50 ? 'high' : concPct > 20 ? 'medium' : 'low') as 'high' | 'medium' | 'low',
+      });
+    }
   }
   userSummaries.sort((a, b) => b.turnover - a.turnover);
 
