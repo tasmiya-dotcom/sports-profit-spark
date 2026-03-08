@@ -15,6 +15,7 @@ import TopPlayerSpotlightPanel from '@/components/TopPlayerSpotlight';
 import PostMatchReports from '@/components/PostMatchReports';
 import IplMatchTracker from '@/components/IplMatchTracker';
 import AudienceInsights from '@/components/AudienceInsights';
+import KPIDetailModal from '@/components/KPIDetailModal';
 import { Activity, RefreshCw, CheckCircle2, AlertCircle, X, Loader2 } from 'lucide-react';
 
 const fmt = (v: number) => `€${Math.round(Math.abs(v)).toLocaleString()}`;
