@@ -161,8 +161,8 @@ const Index = () => {
           <KPICard title="High Risk Users" value={kpi.highRiskUsers.toString()} icon="warning" trend={kpi.highRiskUsers > 0 ? 'down' : 'neutral'} />
         </div>
 
-        {/* Risk Alerts */}
-        <RiskAlertsPanel alerts={data.riskAlerts} />
+        {/* Top Player Spotlight */}
+        <TopPlayerSpotlightPanel player={data.topPlayer} />
 
         {/* P&L + Bet Split row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

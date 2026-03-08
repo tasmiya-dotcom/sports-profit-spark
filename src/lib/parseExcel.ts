@@ -243,8 +243,7 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
   const kpiRejections = findReportValue(reportGrid, 'risk & controls') || findReportValue(reportGrid, 'rejected') || findReportValue(reportGrid, 'rejection');
   const kpiHighRiskUsers = countHighRiskUsersFromReport(reportGrid);
 
-  const riskAlerts = extractRiskAlerts(reportGrid);
-  console.log('extractRiskAlerts result:', JSON.stringify(riskAlerts, null, 2));
+  const topPlayerFromReport = extractTopPlayerFromReport(reportGrid);
 
   const kpiSummary: KPISummary = {
     pnl: Math.round(kpiPnl),
