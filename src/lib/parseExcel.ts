@@ -560,6 +560,14 @@ export function generateDemoData(): DashboardData {
     return { market, count, turnover: Math.round(turnover), pnl: Math.round(pnl) };
   }).sort((a, b) => b.count - a.count);
 
+  const hourlyBets = Array.from({ length: 24 }, (_, h) => ({
+    hour: h,
+    count: Math.round(h >= 8 && h <= 23 ? (30 + Math.random() * 200) * (h >= 18 && h <= 21 ? 2.5 : 1) : Math.random() * 20),
+  }));
+  const rawMarkets = ['Match Winner', 'Over/Under 2.5', 'Asian Handicap', 'Both Teams to Score', 'Total Goals', 'First Goalscorer', 'Innings Runs', 'Handicap -1.5']
+    .map(m => ({ market: m, count: Math.round(30 + Math.random() * 500) }))
+    .sort((a, b) => b.count - a.count);
+
   return {
     reportDate: new Date().toISOString().split('T')[0],
     reportLabel: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
@@ -581,5 +589,7 @@ export function generateDemoData(): DashboardData {
       ccf: 0.85,
     },
     uploadDate: new Date().toISOString(),
+    hourlyBets,
+    rawMarkets,
   };
 }

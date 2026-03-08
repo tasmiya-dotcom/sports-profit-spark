@@ -167,6 +167,9 @@ const Index = () => {
         {/* Top Player Spotlight */}
         <TopPlayerSpotlightPanel player={data.topPlayer} />
 
+        {/* Audience & Engagement Insights */}
+        <AudienceInsights data={data} />
+
         {/* Post-Match Reports */}
         <PostMatchReports />
 
