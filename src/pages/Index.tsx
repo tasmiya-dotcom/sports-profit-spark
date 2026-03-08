@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { parseExcelFile } from '@/lib/parseExcel';
 import type { DashboardData } from '@/lib/types';
 import { useDashboardHistory } from '@/hooks/useDashboardHistory';
@@ -16,7 +16,7 @@ import PostMatchReports from '@/components/PostMatchReports';
 import IplMatchTracker from '@/components/IplMatchTracker';
 import AudienceInsights from '@/components/AudienceInsights';
 import KPIDetailModal from '@/components/KPIDetailModal';
-import { Activity, RefreshCw, CheckCircle2, AlertCircle, X, Loader2 } from 'lucide-react';
+import { Activity, RefreshCw, CheckCircle2, AlertCircle, X, Loader2, Download } from 'lucide-react';
 
 const fmt = (v: number) => `€${Math.round(Math.abs(v)).toLocaleString()}`;
 const fmtSigned = (v: number) => `${v >= 0 ? '+' : '-'}€${Math.round(Math.abs(v)).toLocaleString()}`;
@@ -27,9 +27,75 @@ const Index = () => {
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [kpiModal, setKpiModal] = useState<'pnl' | 'turnover' | 'margin' | 'bets' | 'rejections' | 'highRisk' | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const dashboardRef = useRef<HTMLElement>(null);
+
   // History always has at least the 2 default entries
   const data: DashboardData = activeData ?? history[0].data;
   const kpi = data.kpiSummary;
+
+  const handleDownloadPDF = useCallback(async () => {
+    if (!dashboardRef.current || isExporting) return;
+    setIsExporting(true);
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+
+      const element = dashboardRef.current;
+      const canvas = await html2canvas(element, {
+        backgroundColor: '#0a0a0a',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        windowWidth: 1600,
+      });
+
+      const imgWidth = 297; // A4 landscape width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+      // Add pages as needed
+      const pageHeight = 210; // A4 landscape height in mm
+      let position = 0;
+      let remainingHeight = imgHeight;
+      let page = 0;
+
+      while (remainingHeight > 0) {
+        if (page > 0) pdf.addPage();
+
+        const sourceY = (position / imgHeight) * canvas.height;
+        const sourceH = Math.min((pageHeight / imgHeight) * canvas.height, canvas.height - sourceY);
+
+        // Create a slice canvas for this page
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sourceH;
+        const ctx = pageCanvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#0a0a0a';
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+          ctx.drawImage(canvas, 0, sourceY, canvas.width, sourceH, 0, 0, canvas.width, sourceH);
+        }
+
+        const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.92);
+        const sliceHeight = (sourceH / canvas.width) * imgWidth;
+        pdf.addImage(pageImgData, 'JPEG', 0, 0, imgWidth, sliceHeight);
+
+        position += pageHeight;
+        remainingHeight -= pageHeight;
+        page++;
+      }
+
+      const dateLabel = activeData
+        ? activeData.reportDate.replace(/-/g, '')
+        : 'AllDays';
+      pdf.save(`Arena365_Dashboard_${dateLabel}.pdf`);
+    } catch (err) {
+      console.error('PDF export failed:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [activeData, isExporting]);
 
   const handleFileLoad = (buffer: ArrayBuffer, fileName: string) => {
     setUploadError(null);
@@ -78,6 +144,15 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            <button
+              onClick={handleDownloadPDF}
+              disabled={isExporting}
+              className="flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-md border transition-colors disabled:opacity-50"
+              style={{ borderColor: '#00e554', color: '#00e554', background: 'transparent' }}
+            >
+              {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              {isExporting ? 'Generating…' : 'Download Report'}
+            </button>
             {history.length > 2 && (
               <button
                 onClick={handleResetAll}
@@ -129,7 +204,7 @@ const Index = () => {
         </div>
       )}
 
-      <main className="max-w-[1600px] mx-auto p-6 space-y-6">
+      <main ref={dashboardRef} className="max-w-[1600px] mx-auto p-6 space-y-6">
         {/* Upload History Panel */}
         <UploadHistoryPanel
           history={history}
