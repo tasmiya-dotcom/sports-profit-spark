@@ -547,10 +547,14 @@ export function generateDemoData(): DashboardData {
       highRiskUsers: userSummaries.filter(u => u.concentrationRisk === 'high').length,
     },
     dailyPnL, betSplit, sportsBreakdown, rejectionReasons, userSummaries, marketPatterns,
-    riskAlerts: [
-      { type: 'warning', message: 'shark_player turnover concentration at 26.4%' },
-      { type: 'info', message: 'Tennis margin below threshold at -2.1%' },
-    ],
+    topPlayer: {
+      nickname: 'shark_player',
+      sourceId: 'USR000',
+      bets: 347,
+      turnover: 185000,
+      turnoverSharePct: 26.4,
+      ccf: 0.85,
+    },
     uploadDate: new Date().toISOString(),
   };
 }
