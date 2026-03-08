@@ -147,12 +147,13 @@ const Index = () => {
             trend={kpi.pnl >= 0 ? 'up' : 'down'}
             icon="profit"
             subtitle={activeData ? activeData.reportLabel : `${history.length} days`}
+            onClick={() => setKpiModal('pnl')}
           />
-          <KPICard title="Turnover" value={fmt(kpi.turnover)} icon="bets" />
-          <KPICard title="Avg Margin" value={`${kpi.margin.toFixed(2)}%`} trend={kpi.margin >= 0 ? 'up' : 'down'} icon="margin" />
-          <KPICard title="Total Bets" value={kpi.bets.toLocaleString()} icon="bets" />
-          <KPICard title="Rejections" value={kpi.rejections.toLocaleString()} icon="warning" trend="neutral" />
-          <KPICard title="High Risk Users" value={kpi.highRiskUsers.toString()} icon="warning" trend={kpi.highRiskUsers > 0 ? 'down' : 'neutral'} />
+          <KPICard title="Turnover" value={fmt(kpi.turnover)} icon="bets" onClick={() => setKpiModal('turnover')} />
+          <KPICard title="Avg Margin" value={`${kpi.margin.toFixed(2)}%`} trend={kpi.margin >= 0 ? 'up' : 'down'} icon="margin" onClick={() => setKpiModal('margin')} />
+          <KPICard title="Total Bets" value={kpi.bets.toLocaleString()} icon="bets" onClick={() => setKpiModal('bets')} />
+          <KPICard title="Rejections" value={kpi.rejections.toLocaleString()} icon="warning" trend="neutral" onClick={() => setKpiModal('rejections')} />
+          <KPICard title="High Risk Users" value={kpi.highRiskUsers.toString()} icon="warning" trend={kpi.highRiskUsers > 0 ? 'down' : 'neutral'} onClick={() => setKpiModal('highRisk')} />
         </div>
 
         {/* Top Player Spotlight */}
