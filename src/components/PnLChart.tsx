@@ -27,22 +27,22 @@ const PnLChart = ({ history, selectedId, onSelectDay }: PnLChartProps) => {
       <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Daily P&L</h3>
       <ResponsiveContainer width="100%" height={280}>
         <BarChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }} onClick={handleClick} style={{ cursor: 'pointer' }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 14% 18%)" />
-          <XAxis dataKey="date" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} />
-          <YAxis tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`} />
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <XAxis dataKey="date" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+          <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`} />
           <Tooltip
-            contentStyle={{ background: 'hsl(220 18% 10%)', border: '1px solid hsl(220 14% 18%)', borderRadius: 8, color: 'hsl(210 20% 92%)' }}
+            contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, color: 'hsl(var(--foreground))' }}
             formatter={(value: number) => [`€${value.toLocaleString()}`, 'P&L']}
-            cursor={{ fill: 'hsl(220 14% 18% / 0.5)' }}
+            cursor={{ fill: 'hsl(var(--border) / 0.5)' }}
           />
-          <ReferenceLine y={0} stroke="hsl(215 12% 52%)" strokeDasharray="3 3" />
+          <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
           <Bar dataKey="pnl" radius={[4, 4, 0, 0]} name="P&L">
             {chartData.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
-                fill={entry.pnl >= 0 ? 'hsl(142 72% 45%)' : 'hsl(0 72% 55%)'}
+                fill={entry.pnl >= 0 ? 'hsl(var(--chart-profit))' : 'hsl(var(--chart-loss))'}
                 opacity={selectedId && selectedId !== entry.id ? 0.3 : 1}
-                stroke={selectedId === entry.id ? 'hsl(210 20% 92%)' : 'none'}
+                stroke={selectedId === entry.id ? 'hsl(var(--foreground))' : 'none'}
                 strokeWidth={selectedId === entry.id ? 2 : 0}
               />
             ))}
