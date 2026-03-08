@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import type { DashboardData, DailyPnL, BetSplit, SportBreakdown, RejectionReason, UserSummary, MarketPattern, RiskAlert, KPISummary } from './types';
+import type { DashboardData, DailyPnL, BetSplit, SportBreakdown, RejectionReason, UserSummary, MarketPattern, TopPlayerSpotlight, KPISummary } from './types';
 
 function num(v: any): number {
   if (v === null || v === undefined || v === '') return 0;
