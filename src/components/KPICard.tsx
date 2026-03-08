@@ -6,6 +6,7 @@ interface KPICardProps {
   subtitle?: string;
   trend?: 'up' | 'down' | 'neutral';
   icon?: 'profit' | 'bets' | 'margin' | 'warning';
+  onClick?: () => void;
 }
 
 const iconMap = {
@@ -15,11 +16,11 @@ const iconMap = {
   warning: AlertTriangle,
 };
 
-const KPICard = ({ title, value, subtitle, trend, icon = 'profit' }: KPICardProps) => {
+const KPICard = ({ title, value, subtitle, trend, icon = 'profit', onClick }: KPICardProps) => {
   const Icon = iconMap[icon];
 
   return (
-    <div className="kpi-card">
+    <div className="kpi-card cursor-pointer hover:border-[#00e554]/50 transition-colors" onClick={onClick}>
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs text-muted-foreground uppercase tracking-wider">{title}</span>
         <Icon className="w-4 h-4 text-muted-foreground" />

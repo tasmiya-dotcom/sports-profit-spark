@@ -15,6 +15,7 @@ import TopPlayerSpotlightPanel from '@/components/TopPlayerSpotlight';
 import PostMatchReports from '@/components/PostMatchReports';
 import IplMatchTracker from '@/components/IplMatchTracker';
 import AudienceInsights from '@/components/AudienceInsights';
+import KPIDetailModal from '@/components/KPIDetailModal';
 import { Activity, RefreshCw, CheckCircle2, AlertCircle, X, Loader2 } from 'lucide-react';
 
 const fmt = (v: number) => `€${Math.round(Math.abs(v)).toLocaleString()}`;
@@ -25,7 +26,7 @@ const Index = () => {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
+  const [kpiModal, setKpiModal] = useState<'pnl' | 'turnover' | 'margin' | 'bets' | 'rejections' | 'highRisk' | null>(null);
   // History always has at least the 2 default entries
   const data: DashboardData = activeData ?? history[0].data;
   const kpi = data.kpiSummary;
@@ -146,12 +147,13 @@ const Index = () => {
             trend={kpi.pnl >= 0 ? 'up' : 'down'}
             icon="profit"
             subtitle={activeData ? activeData.reportLabel : `${history.length} days`}
+            onClick={() => setKpiModal('pnl')}
           />
-          <KPICard title="Turnover" value={fmt(kpi.turnover)} icon="bets" />
-          <KPICard title="Avg Margin" value={`${kpi.margin.toFixed(2)}%`} trend={kpi.margin >= 0 ? 'up' : 'down'} icon="margin" />
-          <KPICard title="Total Bets" value={kpi.bets.toLocaleString()} icon="bets" />
-          <KPICard title="Rejections" value={kpi.rejections.toLocaleString()} icon="warning" trend="neutral" />
-          <KPICard title="High Risk Users" value={kpi.highRiskUsers.toString()} icon="warning" trend={kpi.highRiskUsers > 0 ? 'down' : 'neutral'} />
+          <KPICard title="Turnover" value={fmt(kpi.turnover)} icon="bets" onClick={() => setKpiModal('turnover')} />
+          <KPICard title="Avg Margin" value={`${kpi.margin.toFixed(2)}%`} trend={kpi.margin >= 0 ? 'up' : 'down'} icon="margin" onClick={() => setKpiModal('margin')} />
+          <KPICard title="Total Bets" value={kpi.bets.toLocaleString()} icon="bets" onClick={() => setKpiModal('bets')} />
+          <KPICard title="Rejections" value={kpi.rejections.toLocaleString()} icon="warning" trend="neutral" onClick={() => setKpiModal('rejections')} />
+          <KPICard title="High Risk Users" value={kpi.highRiskUsers.toString()} icon="warning" trend={kpi.highRiskUsers > 0 ? 'down' : 'neutral'} onClick={() => setKpiModal('highRisk')} />
         </div>
 
         {/* Top Player Spotlight */}
@@ -186,6 +188,8 @@ const Index = () => {
         {/* Market Patterns */}
         <MarketPatternChart data={data.marketPatterns} />
       </main>
+
+      {kpiModal && <KPIDetailModal type={kpiModal} data={data} onClose={() => setKpiModal(null)} />}
     </div>
   );
 };
