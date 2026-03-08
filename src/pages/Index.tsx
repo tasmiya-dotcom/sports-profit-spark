@@ -71,9 +71,7 @@ const Index = () => {
               <p className="text-xs text-muted-foreground">
                 {activeData
                   ? `Viewing: ${activeData.reportLabel}`
-                  : hasHistory
-                    ? selectedId === null ? 'All Days Overview' : 'Select a day'
-                    : 'Demo Data'}
+                  : selectedId === null ? `${history.length} days loaded` : 'Select a day'}
               </p>
             </div>
           </div>
