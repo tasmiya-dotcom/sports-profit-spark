@@ -122,36 +122,37 @@ function findReportValue(grid: any[][], label: string): number {
 function extractRiskAlerts(grid: any[][]): RiskAlert[] {
   const alerts: RiskAlert[] = [];
 
-  // Find the "RISK ALERTS" section header in column B (index 1)
-  let startRow = -1;
+  // Find the "RISK ALERTS" header row in column B (index 1)
+  let headerRow = -1;
   for (let r = 0; r < grid.length; r++) {
-    const colB = str(grid[r]?.[1]).toUpperCase();
-    if (colB.includes('RISK ALERTS')) {
-      startRow = r + 1;
+    if (str(grid[r]?.[1]).trim().toUpperCase() === 'RISK ALERTS') {
+      headerRow = r;
       break;
     }
   }
-  if (startRow === -1) return alerts;
+  if (headerRow === -1) return alerts;
 
-  // Read rows until the next section header (e.g. "ACCEPTED") or end of sheet
-  for (let r = startRow; r < grid.length; r++) {
-    const colB = str(grid[r]?.[1]);
-    const colBUpper = colB.toUpperCase();
-    // Stop at next section header
-    if (colBUpper.includes('ACCEPTED') || colBUpper.includes('PERFORMANCE') || colBUpper.includes('PER USER')) {
+  // Find the next section header after RISK ALERTS (e.g. "ACCEPTED")
+  let endRow = grid.length;
+  for (let r = headerRow + 1; r < grid.length; r++) {
+    const val = str(grid[r]?.[1]).trim().toUpperCase();
+    if (val && (val === 'ACCEPTED' || val === 'PERFORMANCE' || val.includes('PER USER'))) {
+      endRow = r;
       break;
     }
+  }
+
+  // Read only the rows between the header and the next section
+  for (let r = headerRow + 1; r < endRow; r++) {
+    const colB = str(grid[r]?.[1]).trim();
     if (!colB) continue;
 
-    // Determine alert type from the symbol prefix
     if (colB.includes('⚠')) {
       alerts.push({ type: 'warning', message: colB.replace(/⚠/g, '').trim() });
     } else if (colB.includes('ℹ')) {
       alerts.push({ type: 'info', message: colB.replace(/ℹ/g, '').trim() });
-    } else {
-      // Any other non-empty row in this section is treated as info
-      alerts.push({ type: 'info', message: colB.trim() });
     }
+    // Ignore rows without ⚠ or ℹ — they are not real alerts
   }
 
   return alerts;
