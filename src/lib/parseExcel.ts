@@ -122,14 +122,35 @@ function findReportValue(grid: any[][], label: string): number {
 function extractRiskAlerts(grid: any[][]): RiskAlert[] {
   const alerts: RiskAlert[] = [];
 
-  for (const row of grid) {
-    const fullRow = row.map((c: any) => str(c)).join(' ').trim();
-    if (!fullRow) continue;
+  // Find the "RISK ALERTS" section header in column B (index 1)
+  let startRow = -1;
+  for (let r = 0; r < grid.length; r++) {
+    const colB = str(grid[r]?.[1]).toUpperCase();
+    if (colB.includes('RISK ALERTS')) {
+      startRow = r + 1;
+      break;
+    }
+  }
+  if (startRow === -1) return alerts;
 
-    if (fullRow.includes('⚠')) {
-      alerts.push({ type: 'warning', message: fullRow.replace(/⚠/g, '').trim() });
-    } else if (fullRow.includes('ℹ')) {
-      alerts.push({ type: 'info', message: fullRow.replace(/ℹ/g, '').trim() });
+  // Read rows until the next section header (e.g. "ACCEPTED") or end of sheet
+  for (let r = startRow; r < grid.length; r++) {
+    const colB = str(grid[r]?.[1]);
+    const colBUpper = colB.toUpperCase();
+    // Stop at next section header
+    if (colBUpper.includes('ACCEPTED') || colBUpper.includes('PERFORMANCE') || colBUpper.includes('PER USER')) {
+      break;
+    }
+    if (!colB) continue;
+
+    // Determine alert type from the symbol prefix
+    if (colB.includes('⚠')) {
+      alerts.push({ type: 'warning', message: colB.replace(/⚠/g, '').trim() });
+    } else if (colB.includes('ℹ')) {
+      alerts.push({ type: 'info', message: colB.replace(/ℹ/g, '').trim() });
+    } else {
+      // Any other non-empty row in this section is treated as info
+      alerts.push({ type: 'info', message: colB.trim() });
     }
   }
 
