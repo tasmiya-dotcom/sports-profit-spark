@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { parseExcelFile, generateDemoData } from '@/lib/parseExcel';
+import { parseExcelFile } from '@/lib/parseExcel';
 import type { DashboardData } from '@/lib/types';
 import { useDashboardHistory } from '@/hooks/useDashboardHistory';
 import FileUpload from '@/components/FileUpload';
@@ -26,18 +26,9 @@ const Index = () => {
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const hasHistory = history.length > 0;
-  const demo = generateDemoData();
-
-  // When a specific day is selected show it; when "All Days" show first day; otherwise demo
-  const data: DashboardData = activeData
-    ? activeData
-    : hasHistory
-      ? history[0].data
-      : demo;
-
-  // Safety: if data somehow lacks kpiSummary, fall back to demo
-  const kpiSafe = data?.kpiSummary ?? demo.kpiSummary;
+  // History always has at least the 2 default entries
+  const data: DashboardData = activeData ?? history[0].data;
+  const kpi = data.kpiSummary;
 
   const handleFileLoad = (buffer: ArrayBuffer, fileName: string) => {
     setUploadError(null);
@@ -66,7 +57,7 @@ const Index = () => {
     setUploadSuccess(null);
   };
 
-  const kpi = kpiSafe;
+  
 
   return (
     <div className="min-h-screen bg-background">
@@ -80,14 +71,12 @@ const Index = () => {
               <p className="text-xs text-muted-foreground">
                 {activeData
                   ? `Viewing: ${activeData.reportLabel}`
-                  : hasHistory
-                    ? selectedId === null ? 'All Days Overview' : 'Select a day'
-                    : 'Demo Data'}
+                  : selectedId === null ? `${history.length} days loaded` : 'Select a day'}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            {hasHistory && (
+            {history.length > 2 && (
               <button
                 onClick={handleResetAll}
                 className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -155,7 +144,7 @@ const Index = () => {
             value={fmtSigned(kpi.pnl)}
             trend={kpi.pnl >= 0 ? 'up' : 'down'}
             icon="profit"
-            subtitle={activeData ? activeData.reportLabel : hasHistory ? `${history.length} days` : 'Demo'}
+            subtitle={activeData ? activeData.reportLabel : `${history.length} days`}
           />
           <KPICard title="Turnover" value={fmt(kpi.turnover)} icon="bets" />
           <KPICard title="Avg Margin" value={`${kpi.margin.toFixed(2)}%`} trend={kpi.margin >= 0 ? 'up' : 'down'} icon="margin" />
@@ -179,14 +168,7 @@ const Index = () => {
         {/* P&L + Bet Split row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            {hasHistory ? (
-              <PnLChart history={history} selectedId={selectedId} onSelectDay={setSelectedId} />
-            ) : (
-              <div className="kpi-card">
-                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Daily P&L</h3>
-                <p className="text-xs text-muted-foreground text-center py-16">Upload Excel files to see daily P&L bars</p>
-              </div>
-            )}
+            <PnLChart history={history} selectedId={selectedId} onSelectDay={setSelectedId} />
           </div>
           <BetSplitChart data={data.betSplit} />
         </div>
