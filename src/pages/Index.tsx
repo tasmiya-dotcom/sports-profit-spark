@@ -12,6 +12,7 @@ import RejectionsTable from '@/components/RejectionsTable';
 import UserSummaryTable from '@/components/UserSummaryTable';
 import MarketPatternChart from '@/components/MarketPatternChart';
 import TopPlayerSpotlightPanel from '@/components/TopPlayerSpotlight';
+import PostMatchReports from '@/components/PostMatchReports';
 import IplMatchTracker from '@/components/IplMatchTracker';
 import { Activity, RefreshCw, CheckCircle2, AlertCircle, X, Loader2 } from 'lucide-react';
 
@@ -164,6 +165,9 @@ const Index = () => {
 
         {/* Top Player Spotlight */}
         <TopPlayerSpotlightPanel player={data.topPlayer} />
+
+        {/* Post-Match Reports */}
+        <PostMatchReports />
 
         {/* IPL Match Tracker */}
         <IplMatchTracker />
