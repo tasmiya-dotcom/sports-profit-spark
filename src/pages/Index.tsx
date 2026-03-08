@@ -168,14 +168,7 @@ const Index = () => {
         {/* P&L + Bet Split row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            {hasHistory ? (
-              <PnLChart history={history} selectedId={selectedId} onSelectDay={setSelectedId} />
-            ) : (
-              <div className="kpi-card">
-                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Daily P&L</h3>
-                <p className="text-xs text-muted-foreground text-center py-16">Upload Excel files to see daily P&L bars</p>
-              </div>
-            )}
+            <PnLChart history={history} selectedId={selectedId} onSelectDay={setSelectedId} />
           </div>
           <BetSplitChart data={data.betSplit} />
         </div>
