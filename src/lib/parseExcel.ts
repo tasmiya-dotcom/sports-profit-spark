@@ -122,40 +122,13 @@ function findReportValue(grid: any[][], label: string): number {
 function extractRiskAlerts(grid: any[][]): RiskAlert[] {
   const alerts: RiskAlert[] = [];
 
-  // Find the "RISK ALERTS" header row in column B (index 1)
-  let headerRow = -1;
-  for (let r = 0; r < grid.length; r++) {
-    if (str(grid[r]?.[1]).trim().toUpperCase() === 'RISK ALERTS') {
-      headerRow = r;
-      break;
-    }
-  }
-  if (headerRow === -1) return alerts;
-
-  // Find the next section header after RISK ALERTS (e.g. "ACCEPTED")
-  let endRow = grid.length;
-  for (let r = headerRow + 1; r < grid.length; r++) {
-    const val = str(grid[r]?.[1]).trim().toUpperCase();
-    if (val && (val === 'ACCEPTED' || val === 'PERFORMANCE' || val.includes('PER USER'))) {
-      endRow = r;
-      break;
-    }
-  }
-
-  // Read only the rows between the header and the next section
-  const WARNING_KEYWORDS = ['CONCENTRATION', 'CCF'];
-  const INFO_KEYWORDS = ['REPEATED', 'REJECTIONS', 'LATE', 'SHARP'];
-  const ALL_KEYWORDS = [...WARNING_KEYWORDS, ...INFO_KEYWORDS];
-
-  for (let r = headerRow + 1; r < endRow; r++) {
+  // Rows 4-7 in Excel = 0-indexed rows 3-6, column B = index 1
+  for (let r = 3; r <= 6; r++) {
     const colB = str(grid[r]?.[1]).trim();
     if (!colB) continue;
-
+    // Determine type based on content
     const upper = colB.toUpperCase();
-    const isAlert = ALL_KEYWORDS.some(kw => upper.includes(kw));
-    if (!isAlert) continue;
-
-    const isWarning = WARNING_KEYWORDS.some(kw => upper.includes(kw));
+    const isWarning = upper.includes('CONCENTRATION') || upper.includes('CCF');
     alerts.push({ type: isWarning ? 'warning' : 'info', message: colB });
   }
 
