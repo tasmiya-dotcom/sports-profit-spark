@@ -1,41 +1,34 @@
 import type { RiskAlert } from '@/lib/types';
-import { AlertTriangle, Info, CheckCircle2 } from 'lucide-react';
 
 interface RiskAlertsPanelProps {
-  alerts: RiskAlert[];
+  alerts: RiskAlert[] | undefined;
 }
 
 const RiskAlertsPanel = ({ alerts }: RiskAlertsPanelProps) => {
-  const safeAlerts = alerts ?? [];
-  const hasAlerts = safeAlerts.length > 0;
+  if (!alerts) return null;
+
+  const hasAlerts = alerts.length > 0;
 
   return (
     <div className="kpi-card">
       <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Risk Alerts</h3>
       {!hasAlerts ? (
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-primary/10 border border-primary/20">
-          <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
-          <span className="text-sm font-medium text-primary">All Clear — No active risk alerts</span>
+        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/15 text-primary text-sm font-semibold">
+          ✓ All Clear — No risk flags today
         </div>
       ) : (
         <div className="space-y-2">
-          {safeAlerts.map((alert, i) => (
+          {alerts.map((alert, i) => (
             <div
               key={i}
-              className={`flex items-start gap-2 px-3 py-2.5 rounded-lg border text-sm ${
+              className={`px-3 py-2.5 rounded-lg border text-sm ${
                 alert.type === 'warning'
-                  ? 'bg-destructive/10 border-destructive/20'
-                  : 'bg-accent/10 border-accent/20'
+                  ? 'bg-destructive/15 border-destructive/25 text-destructive font-bold'
+                  : 'bg-amber-500/15 border-amber-500/25 text-amber-700 dark:text-amber-400'
               }`}
             >
-              {alert.type === 'warning' ? (
-                <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-              ) : (
-                <Info className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-              )}
-              <span className={alert.type === 'warning' ? 'text-destructive' : 'text-accent'}>
-                {alert.message}
-              </span>
+              {alert.type === 'warning' ? '⚠ ' : 'ℹ '}
+              {alert.message}
             </div>
           ))}
         </div>

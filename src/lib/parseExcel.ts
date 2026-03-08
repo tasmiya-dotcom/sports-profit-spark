@@ -121,31 +121,15 @@ function findReportValue(grid: any[][], label: string): number {
  */
 function extractRiskAlerts(grid: any[][]): RiskAlert[] {
   const alerts: RiskAlert[] = [];
-  let inRiskSection = false;
 
   for (const row of grid) {
-    const cell0 = str(row[0]);
-    const fullRow = row.map((c: any) => str(c)).join(' ');
+    const fullRow = row.map((c: any) => str(c)).join(' ').trim();
+    if (!fullRow) continue;
 
-    if (cell0.toLowerCase().includes('risk alert') || cell0.toLowerCase().includes('risk & alert')) {
-      inRiskSection = true;
-      continue;
-    }
-
-    // Stop at next section
-    if (inRiskSection && cell0 && (cell0.toLowerCase().includes('per user') || cell0.toLowerCase().includes('sport') || cell0.toLowerCase().includes('market'))) {
-      break;
-    }
-
-    if (inRiskSection && fullRow.trim()) {
-      const text = fullRow.trim();
-      if (text.includes('⚠') || text.toLowerCase().includes('warning') || text.toLowerCase().includes('alert') || text.toLowerCase().includes('high')) {
-        alerts.push({ type: 'warning', message: text.replace(/⚠/g, '').trim() });
-      } else if (text.includes('ℹ') || text.toLowerCase().includes('info') || text.toLowerCase().includes('note')) {
-        alerts.push({ type: 'info', message: text.replace(/ℹ/g, '').trim() });
-      } else if (text.length > 3) {
-        alerts.push({ type: 'info', message: text });
-      }
+    if (fullRow.includes('⚠')) {
+      alerts.push({ type: 'warning', message: fullRow.replace(/⚠/g, '').trim() });
+    } else if (fullRow.includes('ℹ')) {
+      alerts.push({ type: 'info', message: fullRow.replace(/ℹ/g, '').trim() });
     }
   }
 
