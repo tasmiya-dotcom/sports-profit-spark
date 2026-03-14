@@ -91,14 +91,9 @@ const DONUT_COLORS_DIM = [
   '#ec4899',
 ];
 
-const tooltipStyle = {
-  background: '#1e1e1e',
-  border: '1px solid #00e554',
-  borderRadius: 8,
-  color: '#ffffff',
-  fontSize: 12,
-};
+const tooltipContentStyle = { backgroundColor: '#1e1e1e', border: '1px solid #00e554', borderRadius: '8px' };
 const tooltipLabelStyle = { color: '#ffffff' };
+const tooltipItemStyle = { color: '#ffffff' };
 
 const AudienceInsights = ({ data }: Props) => {
   const [open, setOpen] = useState(true);
@@ -170,7 +165,7 @@ const AudienceInsights = ({ data }: Props) => {
                         <BarChart data={hourly} margin={{ top: 10, right: 5, left: -15, bottom: 0 }}>
                           <XAxis dataKey="hour" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} tickFormatter={(h) => `${h}:00`} interval={3} />
                           <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
-                          <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} formatter={(v: number) => [`${v} bets`, 'Bets']} labelFormatter={(h) => `${h}:00`} />
+                          <Tooltip contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} formatter={(v: number) => [`${v} bets`, 'Bets']} labelFormatter={(h) => `${h}:00`} />
                           <Bar dataKey="count" radius={[3, 3, 0, 0]}>
                             {hourly.map((entry) => (
                               <Cell key={entry.hour} fill={entry.hour === peakHour.hour ? '#00e554' : '#1a4a1a'} />
@@ -232,7 +227,7 @@ const AudienceInsights = ({ data }: Props) => {
                               />
                             ))}
                           </Pie>
-                          <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} formatter={(v: number, name: string) => {
+                          <Tooltip contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} formatter={(v: number, name: string) => {
                             const pct = totalBets ? ((v / totalBets) * 100).toFixed(1) : '0';
                             return [`${v} bets (${pct}%)`, name];
                           }} />
