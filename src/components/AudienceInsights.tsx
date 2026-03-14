@@ -169,7 +169,7 @@ const AudienceInsights = ({ data }: Props) => {
                         <BarChart data={hourly} margin={{ top: 10, right: 5, left: -15, bottom: 0 }}>
                           <XAxis dataKey="hour" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} tickFormatter={(h) => `${h}:00`} interval={3} />
                           <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
-                          <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`${v} bets`, 'Bets']} labelFormatter={(h) => `${h}:00`} />
+                          <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: '#ffffff' }} formatter={(v: number) => [`${v} bets`, 'Bets']} labelFormatter={(h) => `${h}:00`} />
                           <Bar dataKey="count" radius={[3, 3, 0, 0]}>
                             {hourly.map((entry) => (
                               <Cell key={entry.hour} fill={entry.hour === peakHour.hour ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground) / 0.3)'} />
@@ -231,7 +231,7 @@ const AudienceInsights = ({ data }: Props) => {
                               />
                             ))}
                           </Pie>
-                          <Tooltip contentStyle={tooltipStyle} formatter={(v: number, name: string) => {
+                          <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: '#ffffff' }} formatter={(v: number, name: string) => {
                             const pct = totalBets ? ((v / totalBets) * 100).toFixed(1) : '0';
                             return [`${v} bets (${pct}%)`, name];
                           }} />
