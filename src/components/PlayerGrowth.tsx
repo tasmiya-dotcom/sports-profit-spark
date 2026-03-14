@@ -404,7 +404,7 @@ const PlayerGrowth = ({ externalData }: PlayerGrowthProps) => {
 
       {isOpen && (
         <div className="px-5 pb-5 space-y-5">
-          {/* CSV Upload */}
+          {/* File Upload */}
           <div
             className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
               isDragging ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
@@ -416,21 +416,28 @@ const PlayerGrowth = ({ externalData }: PlayerGrowthProps) => {
           >
             <Upload className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              Drop a <span className="text-primary font-medium">CSV</span> file or click to upload
+              Drop a <span className="text-primary font-medium">CSV</span> or <span className="text-primary font-medium">Excel</span> file or click to upload
             </p>
             <p className="text-xs text-muted-foreground/60 mt-1">
-              Columns: Username, Country Code, Phone, User Joined On, ACS/Click ID, Provider
+              CSV columns: Username, Country Code, Phone, User Joined On, Provider — or Excel with "Player Growth" sheet
             </p>
             <input
               ref={fileRef}
               type="file"
-              accept=".csv"
+              accept=".csv,.xlsx,.xls"
               className="hidden"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }}
             />
           </div>
 
-          {days.length === 0 && (
+          {uploadError && (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{uploadError}</span>
+            </div>
+          )}
+
+          {days.length === 0 && !uploadError && (
             <p className="text-sm text-muted-foreground text-center py-4">No signup data yet. Upload a CSV to get started.</p>
           )}
 
