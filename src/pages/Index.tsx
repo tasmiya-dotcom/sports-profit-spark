@@ -18,6 +18,7 @@ import IplMatchTracker from '@/components/IplMatchTracker';
 
 import AudienceInsights from '@/components/AudienceInsights';
 import PerformanceTrends from '@/components/PerformanceTrends';
+import ExecutiveOverview from '@/components/ExecutiveOverview';
 import KPIDetailModal from '@/components/KPIDetailModal';
 import SevenDaySummary from '@/components/SevenDaySummary';
 import { Activity, RefreshCw, CheckCircle2, AlertCircle, X, Loader2, Download } from 'lucide-react';
@@ -209,6 +210,9 @@ const Index = () => {
       )}
 
       <main ref={dashboardRef} className="max-w-[1600px] mx-auto p-6 space-y-6">
+        {/* Executive Overview */}
+        <ExecutiveOverview history={history} />
+
         {/* Upload History Panel */}
         <UploadHistoryPanel
           history={history}
