@@ -74,6 +74,14 @@ export interface RawMarketEntry {
   count: number;
 }
 
+export interface PlayerGrowthDay {
+  date: string;
+  count: number;
+  byProvider: Record<string, number>;
+  byCountry: Record<string, number>;
+  byHour: Record<number, number>;
+}
+
 export interface DashboardData {
   reportDate: string;
   reportLabel: string;
@@ -88,4 +96,5 @@ export interface DashboardData {
   uploadDate: string;
   hourlyBets: HourlyBets[];
   rawMarkets: RawMarketEntry[];
+  playerGrowth?: PlayerGrowthDay[];
 }
