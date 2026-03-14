@@ -42,7 +42,7 @@ const BetSplitChart = ({ data }: BetSplitChartProps) => {
               <Pie data={turnoverData} cx="50%" cy="50%" innerRadius={40} outerRadius={65} dataKey="value" strokeWidth={0}>
                 {turnoverData.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
               </Pie>
-              <Tooltip contentStyle={{ background: 'hsl(220 18% 10%)', border: '1px solid hsl(220 14% 18%)', borderRadius: 8, color: 'hsl(210 20% 92%)' }} formatter={(v: number) => `€${v.toLocaleString()}`} />
+              <Tooltip contentStyle={{ background: 'hsl(220 18% 10%)', border: '1px solid hsl(220 14% 18%)', borderRadius: 8, color: '#ffffff' }} formatter={(v: number) => `€${v.toLocaleString()}`} />
             </PieChart>
           </ResponsiveContainer>
         </div>
