@@ -238,6 +238,9 @@ const Index = () => {
         {/* 7-Day Summary Banner */}
         <SevenDaySummary history={history} />
 
+        {/* Performance Trends */}
+        <PerformanceTrends history={history} />
+
         {/* Top Player Spotlight */}
         <TopPlayerSpotlightPanel player={data.topPlayer} />
 
