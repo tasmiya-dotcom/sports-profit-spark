@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { ChevronDown, Upload, Trophy, TrendingUp, TrendingDown } from 'lucide-react';
+import { ChevronDown, Upload, Trophy, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '@/lib/supabase';
@@ -42,6 +42,12 @@ function num(v: any): number {
   const s = String(v).replace(/[€,%\s]/g, '');
   const n = parseFloat(s);
   return isNaN(n) ? 0 : n;
+}
+
+/** Deterministic ID from match name + date */
+function makeMatchId(matchName: string, date: string): string {
+  const slug = `${matchName}-${date}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  return slug || `match-${Date.now()}`;
 }
 
 function parsePostMatchExcel(buffer: ArrayBuffer): Omit<PostMatch, 'id' | 'uploadedAt'> {
@@ -99,6 +105,7 @@ const PostMatchReports = () => {
   const [isOpen, setIsOpen] = useState(true);
   const [matches, setMatches] = useState<PostMatch[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -116,11 +123,13 @@ const PostMatchReports = () => {
       }
 
       if (data) {
-        setMatches(prev => {
-          const existing = new Set(prev.map(m => m.id));
-          const fetched = data.map((row: any) => row.data as PostMatch).filter(m => !existing.has(m.id));
-          return [...prev, ...fetched].sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
-        });
+        // Deduplicate by id, keeping latest
+        const byId = new Map<string, PostMatch>();
+        for (const row of data) {
+          const m = row.data as PostMatch;
+          if (!byId.has(m.id)) byId.set(m.id, m);
+        }
+        setMatches(Array.from(byId.values()).sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()));
       }
     };
 
@@ -133,13 +142,19 @@ const PostMatchReports = () => {
     reader.onload = async () => {
       try {
         const parsed = parsePostMatchExcel(reader.result as ArrayBuffer);
-        const entry: PostMatch = { ...parsed, id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, uploadedAt: new Date().toISOString() };
+        const id = makeMatchId(parsed.matchName, parsed.date);
+        const entry: PostMatch = { ...parsed, id, uploadedAt: new Date().toISOString() };
+
+        // Replace existing or add new (dedup by id)
         setMatches(prev => {
-          if (prev.some(m => m.id === entry.id)) return prev;
-          return [entry, ...prev];
+          const filtered = prev.filter(m => m.id !== entry.id);
+          return [entry, ...filtered];
         });
 
-        // Persist to Supabase
+        // Upsert to Supabase (replace if same match)
+        const { error: delErr } = await supabase.from('match_reports').delete().eq('id', id);
+        if (delErr) console.error('Failed to delete old match report:', delErr);
+
         const { error: dbError } = await supabase
           .from('match_reports')
           .insert({ id: entry.id, uploaded_at: entry.uploadedAt, data: entry });
@@ -151,6 +166,15 @@ const PostMatchReports = () => {
     };
     reader.readAsArrayBuffer(file);
   }, []);
+
+  const handleDelete = useCallback(async (id: string) => {
+    setMatches(prev => prev.filter(m => m.id !== id));
+    setConfirmDeleteId(null);
+    if (expandedId === id) setExpandedId(null);
+
+    const { error } = await supabase.from('match_reports').delete().eq('id', id);
+    if (error) console.error('Failed to delete match report:', error);
+  }, [expandedId]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -211,27 +235,57 @@ const PostMatchReports = () => {
               <div className="space-y-3">
                 {matches.map(m => {
                   const isExpanded = expandedId === m.id;
+                  const isConfirming = confirmDeleteId === m.id;
                   return (
                     <div key={m.id} className="bg-background border border-border rounded-xl overflow-hidden">
-                      <button onClick={() => setExpandedId(isExpanded ? null : m.id)} className="w-full text-left px-4 py-3 hover:bg-card/50 transition-colors">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-semibold text-foreground">{m.matchName}</p>
-                            <p className="text-[11px] text-muted-foreground">{m.tournament}{m.date ? ` — ${m.date}` : ''}</p>
-                          </div>
-                          <div className="flex items-center gap-4 text-right">
+                      <div className="flex items-center">
+                        <button onClick={() => setExpandedId(isExpanded ? null : m.id)} className="flex-1 text-left px-4 py-3 hover:bg-card/50 transition-colors">
+                          <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-xs text-muted-foreground">Turnover</p>
-                              <p className="text-sm font-mono font-semibold text-foreground">{fmt(m.turnover)}</p>
+                              <p className="text-sm font-semibold text-foreground">{m.matchName}</p>
+                              <p className="text-[11px] text-muted-foreground">{m.tournament}{m.date ? ` — ${m.date}` : ''}</p>
                             </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground">P&L</p>
-                              <p className={`text-sm font-mono font-semibold ${m.pnl >= 0 ? 'text-primary' : 'text-destructive'}`}>{fmtSigned(m.pnl)}</p>
+                            <div className="flex items-center gap-4 text-right">
+                              <div>
+                                <p className="text-xs text-muted-foreground">Turnover</p>
+                                <p className="text-sm font-mono font-semibold text-foreground">{fmt(m.turnover)}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground">P&L</p>
+                                <p className={`text-sm font-mono font-semibold ${m.pnl >= 0 ? 'text-primary' : 'text-destructive'}`}>{fmtSigned(m.pnl)}</p>
+                              </div>
+                              <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                             </div>
-                            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                           </div>
+                        </button>
+                        {/* Delete button */}
+                        <div className="pr-3 flex items-center">
+                          {isConfirming ? (
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => handleDelete(m.id)}
+                                className="text-[10px] font-medium text-destructive hover:text-destructive/80 transition-colors px-1.5 py-0.5 rounded border border-destructive/30 hover:bg-destructive/10"
+                              >
+                                Yes, delete
+                              </button>
+                              <button
+                                onClick={() => setConfirmDeleteId(null)}
+                                className="text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setConfirmDeleteId(m.id)}
+                              className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                              title="Delete match report"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
-                      </button>
+                      </div>
 
                       {isExpanded && (
                         <div className="px-4 pb-4 space-y-3 border-t border-border">
