@@ -227,7 +227,7 @@ const AudienceInsights = ({ data }: Props) => {
                               />
                             ))}
                           </Pie>
-                          <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} formatter={(v: number, name: string) => {
+                          <Tooltip contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} formatter={(v: number, name: string) => {
                             const pct = totalBets ? ((v / totalBets) * 100).toFixed(1) : '0';
                             return [`${v} bets (${pct}%)`, name];
                           }} />
