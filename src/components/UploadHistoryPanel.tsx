@@ -57,10 +57,10 @@ const UploadHistoryPanel = ({ history, selectedId, onSelect, onDelete, onResetAl
             <div
               key={entry.id}
               onClick={() => onSelect(entry.id)}
-              className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors ${
+              className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-xs transition-all ${
                 isActive
-                  ? 'bg-primary/10 border border-primary/20'
-                  : 'hover:bg-muted/50'
+                  ? 'bg-primary/10 border-l-[3px] border-l-primary border border-primary/20'
+                  : 'hover:bg-primary/5 hover:border-primary/30 border border-transparent'
               }`}
             >
               <div className="flex-1 min-w-0">
