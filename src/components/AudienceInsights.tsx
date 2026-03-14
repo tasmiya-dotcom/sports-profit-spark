@@ -290,7 +290,7 @@ const AudienceInsights = ({ history }: Props) => {
                             {sportPie.map((entry, i) => (
                               <Cell
                                 key={i}
-                                fill={entry.name.toLowerCase().includes('cricket') ? 'hsl(var(--primary))' : DONUT_COLORS_DIM[i % DONUT_COLORS_DIM.length]}
+                                fill={getSportColor(entry.name)}
                               />
                             ))}
                           </Pie>
