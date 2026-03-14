@@ -92,12 +92,13 @@ const DONUT_COLORS_DIM = [
 ];
 
 const tooltipStyle = {
-  background: 'hsl(var(--card))',
-  border: '1px solid hsl(var(--border))',
+  background: '#1e1e1e',
+  border: '1px solid #00e554',
   borderRadius: 8,
   color: '#ffffff',
   fontSize: 12,
 };
+const tooltipLabelStyle = { color: '#888888' };
 
 const AudienceInsights = ({ data }: Props) => {
   const [open, setOpen] = useState(true);
@@ -169,10 +170,10 @@ const AudienceInsights = ({ data }: Props) => {
                         <BarChart data={hourly} margin={{ top: 10, right: 5, left: -15, bottom: 0 }}>
                           <XAxis dataKey="hour" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} tickFormatter={(h) => `${h}:00`} interval={3} />
                           <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
-                          <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: '#ffffff' }} formatter={(v: number) => [`${v} bets`, 'Bets']} labelFormatter={(h) => `${h}:00`} />
+                          <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} formatter={(v: number) => [`${v} bets`, 'Bets']} labelFormatter={(h) => `${h}:00`} />
                           <Bar dataKey="count" radius={[3, 3, 0, 0]}>
                             {hourly.map((entry) => (
-                              <Cell key={entry.hour} fill={entry.hour === peakHour.hour ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground) / 0.3)'} />
+                              <Cell key={entry.hour} fill={entry.hour === peakHour.hour ? '#00e554' : '#1a4a1a'} />
                             ))}
                           </Bar>
                         </BarChart>
@@ -231,7 +232,7 @@ const AudienceInsights = ({ data }: Props) => {
                               />
                             ))}
                           </Pie>
-                          <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: '#ffffff' }} formatter={(v: number, name: string) => {
+                          <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} formatter={(v: number, name: string) => {
                             const pct = totalBets ? ((v / totalBets) * 100).toFixed(1) : '0';
                             return [`${v} bets (${pct}%)`, name];
                           }} />
