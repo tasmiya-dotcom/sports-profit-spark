@@ -49,43 +49,104 @@ const PROVIDER_COLORS = [
   '#ec4899', '#06b6d4', '#f97316', '#14b8a6', '#a855f7',
 ];
 
+const normalizeHeader = (value: string) => value
+  .replace(/^\uFEFF/, '')
+  .trim()
+  .toLowerCase()
+  .replace(/\s+/g, ' ')
+  .replace(/[^a-z0-9_/ ]/g, '');
+
+const normalizeSheetName = (value: string) => value
+  .replace(/^\uFEFF/, '')
+  .trim()
+  .toLowerCase()
+  .replace(/\s+/g, ' ');
+
+const toDateKey = (date: Date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+const parseJoinedOnDate = (value: unknown): Date | null => {
+  if (value instanceof Date && !isNaN(value.getTime())) return value;
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const parsed = XLSX.SSF.parse_date_code(value);
+    if (parsed) {
+      const seconds = Math.floor(parsed.S || 0);
+      return new Date(parsed.y, parsed.m - 1, parsed.d, parsed.H || 0, parsed.M || 0, seconds);
+    }
+    const fallback = new Date((value - 25569) * 86400 * 1000);
+    return isNaN(fallback.getTime()) ? null : fallback;
+  }
+
+  if (typeof value !== 'string') return null;
+
+  const raw = value.trim().replace(/^"|"$/g, '');
+  if (!raw) return null;
+
+  // MM/DD/YYYY, hh:mm:ss AM/PM (explicit format requested)
+  const usDateTime = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s+(\d{1,2}):(\d{2}):(\d{2})\s*(AM|PM)$/i);
+  if (usDateTime) {
+    const month = Number(usDateTime[1]) - 1;
+    const day = Number(usDateTime[2]);
+    const year = Number(usDateTime[3]);
+    const minute = Number(usDateTime[5]);
+    const second = Number(usDateTime[6]);
+    const ampm = usDateTime[7].toUpperCase();
+    let hour = Number(usDateTime[4]) % 12;
+    if (ampm === 'PM') hour += 12;
+    const parsed = new Date(year, month, day, hour, minute, second);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  // MM/DD/YYYY
+  const usDateOnly = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (usDateOnly) {
+    const month = Number(usDateOnly[1]) - 1;
+    const day = Number(usDateOnly[2]);
+    const year = Number(usDateOnly[3]);
+    const parsed = new Date(year, month, day);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  const parsed = new Date(raw);
+  return isNaN(parsed.getTime()) ? null : parsed;
+};
+
 /* ─── CSV parser ─── */
 function parseCsv(text: string): AggDay[] {
-  const lines = text.split(/\r?\n/).filter(l => l.trim());
-  if (lines.length < 2) return [];
+  const workbook = XLSX.read(text, { type: 'string' });
+  const firstSheet = workbook.SheetNames[0];
+  if (!firstSheet) return [];
 
-  const hdr = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/[^a-z0-9_/ ]/g, ''));
-  const iJoined = hdr.findIndex(h => h.includes('joined') || h.includes('user joined'));
-  const iProvider = hdr.findIndex(h => h.includes('provider'));
-  const iCountry = hdr.findIndex(h => h.includes('country'));
+  const rows: Record<string, unknown>[] = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { defval: '' });
+  if (!rows.length) return [];
 
-  if (iJoined < 0) return [];
+  const headers = Object.keys(rows[0]);
+  const joinedKey = headers.find(h => {
+    const n = normalizeHeader(h);
+    return n.includes('user joined on') || n.includes('joined on') || n.includes('user joined') || n.includes('joined');
+  });
+  const providerKey = headers.find(h => normalizeHeader(h).includes('provider'));
+  const countryKey = headers.find(h => normalizeHeader(h).includes('country'));
+
+  if (!joinedKey) return [];
 
   const dayMap = new Map<string, AggDay>();
 
-  for (let i = 1; i < lines.length; i++) {
-    const cols = lines[i].split(',').map(c => c.trim());
-    if (!cols[iJoined]) continue;
+  for (const row of rows) {
+    const dt = parseJoinedOnDate(row[joinedKey]);
+    if (!dt) continue;
 
-    // Parse date — handle multiple formats
-    let dt: Date | null = null;
-    const raw = cols[iJoined].replace(/"/g, '');
-    // Try ISO
-    dt = new Date(raw);
-    if (isNaN(dt.getTime())) {
-      // Try DD/MM/YYYY or DD-MM-YYYY
-      const parts = raw.split(/[\/\-]/);
-      if (parts.length === 3) {
-        const d = parseInt(parts[0]), m = parseInt(parts[1]) - 1, y = parseInt(parts[2]);
-        dt = new Date(y < 100 ? y + 2000 : y, m, d);
-      }
-    }
-    if (!dt || isNaN(dt.getTime())) continue;
-
-    const dateKey = dt.toISOString().slice(0, 10);
+    const dateKey = toDateKey(dt);
     const hour = dt.getHours();
-    const provider = iProvider >= 0 ? (cols[iProvider] || 'Unknown') : 'Unknown';
-    const country = iCountry >= 0 ? (cols[iCountry] || 'Unknown') : 'Unknown';
+    const providerRaw = providerKey ? String(row[providerKey] ?? '').trim() : '';
+    const countryRaw = countryKey ? String(row[countryKey] ?? '').trim() : '';
+    const provider = providerRaw || 'Unknown';
+    const country = countryRaw || 'Unknown';
 
     if (!dayMap.has(dateKey)) {
       dayMap.set(dateKey, { date: dateKey, count: 0, byProvider: {}, byCountry: {}, byHour: {} });
@@ -172,48 +233,33 @@ const PlayerGrowth = ({ externalData }: PlayerGrowthProps) => {
   /* ─── parse Excel "Player Growth" sheet ─── */
   const parseExcelPlayerGrowth = useCallback((buffer: ArrayBuffer): AggDay[] => {
     const workbook = XLSX.read(buffer, { type: 'array' });
-    const sheetName = workbook.SheetNames.find(s => s.toLowerCase().includes('player growth'));
+    const sheetName = workbook.SheetNames.find(name => normalizeSheetName(name) === 'player growth');
     if (!sheetName) return [];
-    const rows: Record<string, any>[] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    const rows: Record<string, unknown>[] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
     if (!rows.length) return [];
 
-    // Check if it's row-per-user format (has a "joined" column)
-    const keys = Object.keys(rows[0]).map(k => k.toLowerCase());
-    const hasJoined = keys.some(k => k.includes('joined'));
+    const headers = Object.keys(rows[0]);
+    const joinedKey = headers.find(h => {
+      const n = normalizeHeader(h);
+      return n.includes('user joined on') || n.includes('joined on') || n.includes('user joined') || n.includes('joined');
+    });
+    const providerKey = headers.find(h => normalizeHeader(h).includes('provider'));
+    const countryKey = headers.find(h => normalizeHeader(h).includes('country'));
 
-    if (hasJoined) {
+    if (joinedKey) {
       // Row-per-user: aggregate without storing PII
-      const hdr = Object.keys(rows[0]);
-      const iJoined = hdr.findIndex(h => h.toLowerCase().includes('joined'));
-      const iProvider = hdr.findIndex(h => h.toLowerCase().includes('provider'));
-      const iCountry = hdr.findIndex(h => h.toLowerCase().includes('country'));
-
       const dayMap = new Map<string, AggDay>();
       for (const row of rows) {
-        const vals = Object.values(row);
-        const rawDate = vals[iJoined];
-        if (!rawDate) continue;
+        const dt = parseJoinedOnDate(row[joinedKey]);
+        if (!dt) continue;
 
-        let dt: Date | null = null;
-        if (typeof rawDate === 'number') {
-          // Excel serial date
-          dt = new Date((rawDate - 25569) * 86400 * 1000);
-        } else {
-          dt = new Date(String(rawDate));
-          if (isNaN(dt.getTime())) {
-            const parts = String(rawDate).split(/[\/\-]/);
-            if (parts.length === 3) {
-              const d = parseInt(parts[0]), m = parseInt(parts[1]) - 1, y = parseInt(parts[2]);
-              dt = new Date(y < 100 ? y + 2000 : y, m, d);
-            }
-          }
-        }
-        if (!dt || isNaN(dt.getTime())) continue;
-
-        const dateKey = dt.toISOString().slice(0, 10);
+        const dateKey = toDateKey(dt);
         const hour = dt.getHours();
-        const provider = iProvider >= 0 ? String(vals[iProvider] || 'Unknown') : 'Unknown';
-        const country = iCountry >= 0 ? String(vals[iCountry] || 'Unknown') : 'Unknown';
+        const providerRaw = providerKey ? String(row[providerKey] ?? '').trim() : '';
+        const countryRaw = countryKey ? String(row[countryKey] ?? '').trim() : '';
+        const provider = providerRaw || 'Unknown';
+        const country = countryRaw || 'Unknown';
 
         if (!dayMap.has(dateKey)) {
           dayMap.set(dateKey, { date: dateKey, count: 0, byProvider: {}, byCountry: {}, byHour: {} });
@@ -227,26 +273,38 @@ const PlayerGrowth = ({ externalData }: PlayerGrowthProps) => {
       return Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
     }
 
-    // Summary format: try to extract aggregated data
-    const fallbackDate = new Date().toISOString().slice(0, 10);
+    // Summary format fallback: pull date + total from rows that contain both
     const dayMap = new Map<string, AggDay>();
     for (const row of rows) {
-      const vals = Object.values(row);
-      const dateVal = vals[0];
-      let dateKey = fallbackDate;
-      if (dateVal) {
-        const dt = typeof dateVal === 'number'
-          ? new Date((dateVal - 25569) * 86400 * 1000)
-          : new Date(String(dateVal));
-        if (!isNaN(dt.getTime())) dateKey = dt.toISOString().slice(0, 10);
+      const values = Object.values(row);
+      let rowDate: Date | null = null;
+      let rowCount = 0;
+
+      for (const value of values) {
+        if (!rowDate) {
+          rowDate = parseJoinedOnDate(value);
+        }
+
+        if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+          rowCount = Math.max(rowCount, Math.floor(value));
+        } else if (typeof value === 'string') {
+          const parsed = parseInt(value.replace(/[^0-9]/g, ''), 10);
+          if (!Number.isNaN(parsed) && parsed > 0) {
+            rowCount = Math.max(rowCount, parsed);
+          }
+        }
       }
-      const count = typeof vals[1] === 'number' ? vals[1] : parseInt(String(vals[1])) || 0;
+
+      if (!rowDate || rowCount <= 0) continue;
+
+      const dateKey = toDateKey(rowDate);
       if (!dayMap.has(dateKey)) {
         dayMap.set(dateKey, { date: dateKey, count: 0, byProvider: {}, byCountry: {}, byHour: {} });
       }
       const day = dayMap.get(dateKey)!;
-      day.count += count;
+      day.count += rowCount;
     }
+
     return Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
   }, []);
 
@@ -268,7 +326,7 @@ const PlayerGrowth = ({ externalData }: PlayerGrowthProps) => {
       const text = await file.text();
       parsed = parseCsv(text);
       if (!parsed.length) {
-        setUploadError('No signup data found. Ensure the CSV has a "User Joined On" column.');
+        setUploadError('No signup data found. Ensure the CSV has "User Joined On" in MM/DD/YYYY, hh:mm:ss AM/PM format.');
         return;
       }
     } else {
