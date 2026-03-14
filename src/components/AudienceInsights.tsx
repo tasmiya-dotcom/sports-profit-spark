@@ -82,15 +82,24 @@ function groupMarkets(raw: { market: string; count: number }[]) {
   return Array.from(grouped, ([market, count]) => ({ market, count })).sort((a, b) => b.count - a.count);
 }
 
-const DONUT_COLORS_DIM = [
-  'hsl(var(--chart-2))',
-  'hsl(var(--chart-3))',
-  'hsl(var(--chart-4))',
-  'hsl(var(--chart-5))',
-  '#6366f1',
-  '#f59e0b',
-  '#ec4899',
-];
+const SPORT_COLORS: Record<string, string> = {
+  cricket: '#00e554',
+  football: '#3b82f6',
+  tennis: '#f59e0b',
+  basketball: '#ef4444',
+  'ice hockey': '#8b5cf6',
+  soccer: '#f97316',
+  volleyball: '#ec4899',
+};
+const DEFAULT_SPORT_COLOR = '#06b6d4';
+
+function getSportColor(name: string): string {
+  const lower = name.toLowerCase();
+  for (const [key, color] of Object.entries(SPORT_COLORS)) {
+    if (lower.includes(key)) return color;
+  }
+  return DEFAULT_SPORT_COLOR;
+}
 
 const tooltipContentStyle = { backgroundColor: '#1e1e1e', border: '1px solid #00e554', borderRadius: '8px' };
 const tooltipLabelStyle = { color: '#ffffff' };
@@ -281,7 +290,7 @@ const AudienceInsights = ({ history }: Props) => {
                             {sportPie.map((entry, i) => (
                               <Cell
                                 key={i}
-                                fill={entry.name.toLowerCase().includes('cricket') ? 'hsl(var(--primary))' : DONUT_COLORS_DIM[i % DONUT_COLORS_DIM.length]}
+                                fill={getSportColor(entry.name)}
                               />
                             ))}
                           </Pie>
