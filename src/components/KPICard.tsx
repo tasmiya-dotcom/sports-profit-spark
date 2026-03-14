@@ -20,7 +20,7 @@ const KPICard = ({ title, value, subtitle, trend, icon = 'profit', onClick }: KP
   const Icon = iconMap[icon];
 
   return (
-    <div className="kpi-card cursor-pointer hover:border-[#00e554]/50 transition-colors" onClick={onClick}>
+    <div className="kpi-card clickable-card" onClick={onClick}>
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs text-muted-foreground uppercase tracking-wider">{title}</span>
         <Icon className="w-4 h-4 text-muted-foreground" />
