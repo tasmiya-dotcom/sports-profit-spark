@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { ChevronDown, Upload, Trophy, TrendingUp, TrendingDown, BarChart3, ShieldAlert, Clock } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 interface IplMatch {
   id: string;
@@ -15,8 +16,6 @@ interface IplMatch {
   unsettledBets: number;
   uploadedAt: string;
 }
-
-const STORAGE_KEY = 'ipl-match-tracker';
 
 const fmt = (v: number) => `€${Math.round(Math.abs(v)).toLocaleString()}`;
 const fmtSigned = (v: number) => `${v >= 0 ? '+' : '-'}€${Math.round(Math.abs(v)).toLocaleString()}`;
@@ -89,16 +88,28 @@ function parseIplCsv(text: string): Omit<IplMatch, 'id' | 'fileName' | 'uploaded
 
 const IplMatchTracker = () => {
   const [isOpen, setIsOpen] = useState(true);
-  const [matches, setMatches] = useState<IplMatch[]>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch { return []; }
-  });
+  const [matches, setMatches] = useState<IplMatch[]>([]);
 
+  // Fetch from Supabase on mount
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(matches));
-  }, [matches]);
+    const fetchMatches = async () => {
+      const { data, error } = await supabase
+        .from('ipl_tracker')
+        .select('*')
+        .order('uploaded_at', { ascending: false });
+
+      if (error) {
+        console.error('Failed to fetch ipl_tracker:', error);
+        return;
+      }
+
+      if (data) {
+        setMatches(data.map((row: any) => row.data as IplMatch));
+      }
+    };
+
+    fetchMatches();
+  }, []);
 
   const fileLoadRef = useRef<(text: string, fileName: string) => void>(() => {});
   fileLoadRef.current = (text: string, fileName: string) => {
@@ -111,6 +122,14 @@ const IplMatchTracker = () => {
         uploadedAt: new Date().toISOString(),
       };
       setMatches(prev => [entry, ...prev]);
+
+      // Persist to Supabase
+      supabase
+        .from('ipl_tracker')
+        .insert({ id: entry.id, uploaded_at: entry.uploadedAt, data: entry })
+        .then(({ error }) => {
+          if (error) console.error('Failed to save IPL match:', error);
+        });
     } catch (e: any) {
       alert(`Failed to parse "${fileName}": ${e?.message || 'Unknown error'}`);
     }
@@ -144,7 +163,6 @@ const IplMatchTracker = () => {
 
   const hasMatches = matches.length > 0;
 
-  // Aggregated KPIs across all matches
   const totals = matches.reduce((acc, m) => ({
     bets: acc.bets + m.bets,
     turnover: acc.turnover + m.turnover,
@@ -158,7 +176,6 @@ const IplMatchTracker = () => {
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
-      {/* Header with IPL accent stripe */}
       <div className="ipl-header-stripe" />
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -172,7 +189,6 @@ const IplMatchTracker = () => {
 
       {isOpen && (
         <div className="px-5 pb-5 space-y-5">
-          {/* CSV Upload */}
           <div
             onDrop={handleDrop}
             onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
@@ -191,7 +207,6 @@ const IplMatchTracker = () => {
             </div>
           ) : (
             <>
-              {/* KPI Cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                 <KpiTile icon={<BarChart3 className="w-4 h-4" />} label="Total Bets" value={totals.bets.toLocaleString()} />
                 <KpiTile icon={<TrendingUp className="w-4 h-4" />} label="Total Turnover" value={fmt(totals.turnover)} />
@@ -212,7 +227,6 @@ const IplMatchTracker = () => {
                 <KpiTile icon={<Clock className="w-4 h-4" />} label="Unsettled Bets" value={totals.unsettled.toLocaleString()} />
               </div>
 
-              {/* Match Log Table */}
               <div className="overflow-x-auto">
                 <table className="data-table">
                   <thead>

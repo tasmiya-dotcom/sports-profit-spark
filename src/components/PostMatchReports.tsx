@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { ChevronDown, Upload, Trophy, TrendingUp, TrendingDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { supabase } from '@/lib/supabase';
 
 interface MarketPatternRow {
   market: string;
@@ -32,7 +33,6 @@ interface PostMatch {
   uploadedAt: string;
 }
 
-const STORAGE_KEY = 'post-match-reports';
 const fmt = (v: number) => `€${Math.round(Math.abs(v)).toLocaleString()}`;
 const fmtSigned = (v: number) => `${v >= 0 ? '+' : '-'}€${Math.round(Math.abs(v)).toLocaleString()}`;
 
@@ -54,11 +54,9 @@ function parsePostMatchExcel(buffer: ArrayBuffer): Omit<PostMatch, 'id' | 'uploa
     return ws[addr]?.v ?? '';
   };
 
-  // A1: match name (strip prefix)
   let matchName = String(cell(1, 1)).replace(/^POST-MATCH REPORT\s*[—–-]\s*/i, '').trim();
   if (!matchName) matchName = 'Unknown Match';
 
-  // A2: tournament & date
   const a2 = String(cell(2, 1)).trim();
   let tournament = a2;
   let date = '';
@@ -68,7 +66,6 @@ function parsePostMatchExcel(buffer: ArrayBuffer): Omit<PostMatch, 'id' | 'uploa
     tournament = a2.replace(date, '').replace(/[|,\-–—]\s*$/, '').replace(/^\s*[|,\-–—]/, '').trim();
   }
 
-  // Column C values
   const bets = num(cell(6, 3));
   const turnover = num(cell(7, 3));
   const liveTurnover = num(cell(8, 3));
@@ -82,7 +79,6 @@ function parsePostMatchExcel(buffer: ArrayBuffer): Omit<PostMatch, 'id' | 'uploa
   const unsettledBets = num(cell(29, 3));
   const unsettledTurnover = num(cell(30, 3));
 
-  // Market patterns from row 35 downward, columns B-F
   const marketPatterns: MarketPatternRow[] = [];
   for (let r = 35; r < 200; r++) {
     const market = String(cell(r, 2)).trim();
@@ -101,23 +97,47 @@ function parsePostMatchExcel(buffer: ArrayBuffer): Omit<PostMatch, 'id' | 'uploa
 
 const PostMatchReports = () => {
   const [isOpen, setIsOpen] = useState(true);
-  const [matches, setMatches] = useState<PostMatch[]>(() => {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
-  });
+  const [matches, setMatches] = useState<PostMatch[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(matches)); }, [matches]);
+  // Fetch from Supabase on mount
+  useEffect(() => {
+    const fetchMatches = async () => {
+      const { data, error } = await supabase
+        .from('match_reports')
+        .select('*')
+        .order('uploaded_at', { ascending: false });
+
+      if (error) {
+        console.error('Failed to fetch match_reports:', error);
+        return;
+      }
+
+      if (data) {
+        setMatches(data.map((row: any) => row.data as PostMatch));
+      }
+    };
+
+    fetchMatches();
+  }, []);
 
   const handleFile = useCallback((file: File) => {
     setError(null);
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       try {
         const parsed = parsePostMatchExcel(reader.result as ArrayBuffer);
         const entry: PostMatch = { ...parsed, id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, uploadedAt: new Date().toISOString() };
         setMatches(prev => [entry, ...prev]);
+
+        // Persist to Supabase
+        const { error: dbError } = await supabase
+          .from('match_reports')
+          .insert({ id: entry.id, uploaded_at: entry.uploadedAt, data: entry });
+
+        if (dbError) console.error('Failed to save match report:', dbError);
       } catch (e: any) {
         setError(e?.message || 'Failed to parse file');
       }
@@ -135,7 +155,6 @@ const PostMatchReports = () => {
 
   return (
     <div className="kpi-card !p-0 overflow-hidden">
-      {/* Header */}
       <button onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-card/80 transition-colors">
         <div className="flex items-center gap-2.5">
           <Trophy className="w-5 h-5 text-primary" />
@@ -147,7 +166,6 @@ const PostMatchReports = () => {
 
       {isOpen && (
         <div className="px-5 pb-5 space-y-4">
-          {/* Upload area */}
           <div
             onDrop={onDrop}
             onDragOver={e => e.preventDefault()}
@@ -168,7 +186,6 @@ const PostMatchReports = () => {
             </div>
           ) : (
             <>
-              {/* Turnover chart */}
               {matches.length > 1 && (
                 <div>
                   <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Turnover per Match</p>
@@ -184,7 +201,6 @@ const PostMatchReports = () => {
                 </div>
               )}
 
-              {/* Match cards */}
               <div className="space-y-3">
                 {matches.map(m => {
                   const isExpanded = expandedId === m.id;
@@ -212,7 +228,6 @@ const PostMatchReports = () => {
 
                       {isExpanded && (
                         <div className="px-4 pb-4 space-y-3 border-t border-border">
-                          {/* KPIs */}
                           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 pt-3">
                             {[
                               { label: 'Bets', value: m.bets.toLocaleString() },
@@ -235,7 +250,6 @@ const PostMatchReports = () => {
                             ))}
                           </div>
 
-                          {/* Market patterns */}
                           {m.marketPatterns.length > 0 && (
                             <div>
                               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Market Pattern Breakdown</p>
