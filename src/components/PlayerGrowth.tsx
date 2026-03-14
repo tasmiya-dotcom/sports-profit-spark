@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import type { PlayerGrowthDay } from '@/lib/types';
 
 /* ─── country code → name ─── */
 const CC: Record<string, string> = {
@@ -99,7 +100,11 @@ function parseCsv(text: string): AggDay[] {
 }
 
 /* ─── component ─── */
-const PlayerGrowth = () => {
+interface PlayerGrowthProps {
+  externalData?: PlayerGrowthDay[];
+}
+
+const PlayerGrowth = ({ externalData }: PlayerGrowthProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [days, setDays] = useState<AggDay[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -124,6 +129,29 @@ const PlayerGrowth = () => {
       }
     })();
   }, []);
+
+  /* ─── merge external data from Excel uploads ─── */
+  useEffect(() => {
+    if (!externalData?.length) return;
+    setDays(prev => {
+      const map = new Map<string, AggDay>();
+      prev.forEach(d => map.set(d.date, d));
+      externalData.forEach(d => map.set(d.date, d)); // newer upload replaces
+      return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date));
+    });
+    // Persist the new external data
+    (async () => {
+      for (const d of externalData) {
+        await supabase.from('signup_data').upsert({
+          date: d.date,
+          count: d.count,
+          by_provider: d.byProvider,
+          by_country: d.byCountry,
+          by_hour: d.byHour,
+        }, { onConflict: 'date' });
+      }
+    })();
+  }, [externalData]);
 
   /* ─── persist to supabase ─── */
   const persist = useCallback(async (newDays: AggDay[]) => {
