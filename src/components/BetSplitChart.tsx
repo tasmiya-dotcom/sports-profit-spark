@@ -31,7 +31,7 @@ const BetSplitChart = ({ data }: BetSplitChartProps) => {
               <Pie data={betsData} cx="50%" cy="50%" innerRadius={40} outerRadius={65} dataKey="value" strokeWidth={0}>
                 {betsData.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
               </Pie>
-              <Tooltip contentStyle={{ background: '#1e1e1e', border: '1px solid #00e554', borderRadius: 8, color: '#ffffff' }} labelStyle={{ color: '#888888' }} />
+              <Tooltip contentStyle={{ background: '#1e1e1e', border: '1px solid #00e554', borderRadius: 8, color: '#ffffff' }} labelStyle={{ color: '#ffffff' }} />
             </PieChart>
           </ResponsiveContainer>
         </div>
