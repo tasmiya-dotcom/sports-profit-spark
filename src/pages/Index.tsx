@@ -15,6 +15,7 @@ import MarketPatternChart from '@/components/MarketPatternChart';
 import TopPlayerSpotlightPanel from '@/components/TopPlayerSpotlight';
 import PostMatchReports from '@/components/PostMatchReports';
 import IplMatchTracker from '@/components/IplMatchTracker';
+import PlayerGrowth from '@/components/PlayerGrowth';
 
 import AudienceInsights from '@/components/AudienceInsights';
 import PerformanceTrends from '@/components/PerformanceTrends';
@@ -256,6 +257,9 @@ const Index = () => {
 
         {/* IPL Match Tracker */}
         <IplMatchTracker />
+
+        {/* Player Growth */}
+        <PlayerGrowth />
 
         {/* P&L + Bet Split row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
