@@ -64,6 +64,7 @@ function normalizeDate(raw: string): string {
 const PlayerGrowth = () => {
   const [allRows, setAllRows] = useState<SignupRow[]>([]);
   const [isOpen, setIsOpen] = useState(true);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -81,10 +82,20 @@ const PlayerGrowth = () => {
   const handleFile = useCallback(async (file: File) => {
     const text = await file.text();
     const rows = parseCsv(text);
-    if (rows.length === 0) return;
+    if (rows.length === 0) {
+      setUploadStatus('No valid rows found in CSV');
+      return;
+    }
 
     const id = `signup-${Date.now()}`;
-    await supabase.from('signup_data').insert({ id, uploaded_at: new Date().toISOString(), data: rows });
+    const { error } = await supabase.from('signup_data').insert({ id, uploaded_at: new Date().toISOString(), data: rows });
+    if (error) {
+      console.error('Supabase insert error:', error);
+      setUploadStatus(`Upload failed: ${error.message}. Ensure signup_data table exists.`);
+    } else {
+      setUploadStatus(`${rows.length} signups loaded from ${file.name}`);
+      setTimeout(() => setUploadStatus(null), 3000);
+    }
     setAllRows(prev => [...prev, ...rows]);
   }, []);
 
@@ -177,6 +188,14 @@ const PlayerGrowth = () => {
               }}
             />
           </div>
+
+          {uploadStatus && (
+            <div className={`text-xs px-3 py-2 rounded-lg border ${
+              uploadStatus.includes('failed') ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-primary/30 bg-primary/10 text-primary'
+            }`}>
+              {uploadStatus}
+            </div>
+          )}
 
           {stats && (
             <>
