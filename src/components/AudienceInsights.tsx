@@ -92,12 +92,13 @@ const DONUT_COLORS_DIM = [
 ];
 
 const tooltipStyle = {
-  background: 'hsl(var(--card))',
-  border: '1px solid hsl(var(--border))',
+  background: '#1e1e1e',
+  border: '1px solid #00e554',
   borderRadius: 8,
   color: '#ffffff',
   fontSize: 12,
 };
+const tooltipLabelStyle = { color: '#888888' };
 
 const AudienceInsights = ({ data }: Props) => {
   const [open, setOpen] = useState(true);
