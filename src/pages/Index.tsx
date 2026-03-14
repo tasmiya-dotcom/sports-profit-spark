@@ -151,7 +151,7 @@ const Index = () => {
             <button
               onClick={handleDownloadPDF}
               disabled={isExporting}
-              className="flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-md border transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-md border transition-all hover:scale-105 hover:brightness-125 disabled:opacity-50 cursor-pointer"
               style={{ borderColor: '#00e554', color: '#00e554', background: 'transparent' }}
             >
               {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}

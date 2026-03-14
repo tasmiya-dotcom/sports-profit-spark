@@ -186,7 +186,7 @@ const AudienceInsights = ({ history }: Props) => {
       <div className="p-5">
         <button
           onClick={() => setOpen(!open)}
-          className="w-full flex items-center justify-between"
+          className="section-toggle w-full flex items-center justify-between"
         >
           <div>
             <h2 className="text-base font-bold tracking-wide text-foreground">
