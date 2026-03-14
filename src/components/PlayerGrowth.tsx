@@ -116,49 +116,78 @@ const parseJoinedOnDate = (value: unknown): Date | null => {
   return isNaN(parsed.getTime()) ? null : parsed;
 };
 
-/* ─── CSV parser ─── */
-function parseCsv(text: string): AggDay[] {
-  const workbook = XLSX.read(text, { type: 'string' });
-  const firstSheet = workbook.SheetNames[0];
-  if (!firstSheet) return [];
-
-  const rows: Record<string, unknown>[] = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { defval: '' });
-  if (!rows.length) return [];
-
-  const headers = Object.keys(rows[0]);
-  const joinedKey = headers.find(h => {
-    const n = normalizeHeader(h);
-    return n.includes('user joined on') || n.includes('joined on') || n.includes('user joined') || n.includes('joined');
-  });
-  const providerKey = headers.find(h => normalizeHeader(h).includes('provider'));
-  const countryKey = headers.find(h => normalizeHeader(h).includes('country'));
-
-  if (!joinedKey) return [];
-
-  const dayMap = new Map<string, AggDay>();
-
-  for (const row of rows) {
-    const dt = parseJoinedOnDate(row[joinedKey]);
-    if (!dt) continue;
-
-    const dateKey = toDateKey(dt);
-    const hour = dt.getHours();
-    const providerRaw = providerKey ? String(row[providerKey] ?? '').trim() : '';
-    const countryRaw = countryKey ? String(row[countryKey] ?? '').trim() : '';
-    const provider = providerRaw || 'Unknown';
-    const country = countryRaw || 'Unknown';
-
-    if (!dayMap.has(dateKey)) {
-      dayMap.set(dateKey, { date: dateKey, count: 0, byProvider: {}, byCountry: {}, byHour: {} });
+/* ─── CSV parser (manual, handles commas inside quoted fields) ─── */
+function splitCsvLine(line: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      inQuotes = !inQuotes;
+    } else if (ch === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += ch;
     }
-    const day = dayMap.get(dateKey)!;
-    day.count++;
-    day.byProvider[provider] = (day.byProvider[provider] || 0) + 1;
-    day.byCountry[country] = (day.byCountry[country] || 0) + 1;
-    day.byHour[hour] = (day.byHour[hour] || 0) + 1;
   }
+  result.push(current.trim());
+  return result;
+}
 
-  return Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+function parseCsv(text: string): AggDay[] {
+  try {
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) { console.warn('[PlayerGrowth] CSV has fewer than 2 lines'); return []; }
+
+    const headers = splitCsvLine(lines[0]);
+    console.log('[PlayerGrowth] CSV headers:', headers);
+
+    const iJoined = headers.findIndex(h => {
+      const n = normalizeHeader(h);
+      return n.includes('user joined on') || n.includes('joined on') || n.includes('user joined') || n.includes('joined');
+    });
+    const iProvider = headers.findIndex(h => normalizeHeader(h).includes('provider'));
+    const iCountry = headers.findIndex(h => normalizeHeader(h).includes('country'));
+
+    console.log('[PlayerGrowth] CSV column indices — joined:', iJoined, 'provider:', iProvider, 'country:', iCountry);
+    if (iJoined < 0) { console.warn('[PlayerGrowth] No "joined" column found in CSV headers'); return []; }
+
+    const dayMap = new Map<string, AggDay>();
+
+    for (let i = 1; i < lines.length; i++) {
+      const cols = splitCsvLine(lines[i]);
+      const rawVal = cols[iJoined];
+      if (!rawVal) continue;
+
+      const dt = parseJoinedOnDate(rawVal);
+      if (!dt) {
+        if (i <= 3) console.warn('[PlayerGrowth] Could not parse date on row', i, ':', rawVal);
+        continue;
+      }
+
+      const dateKey = toDateKey(dt);
+      const hour = dt.getHours();
+      const provider = (iProvider >= 0 ? cols[iProvider] : '') || 'Unknown';
+      const country = (iCountry >= 0 ? cols[iCountry] : '') || 'Unknown';
+
+      if (!dayMap.has(dateKey)) {
+        dayMap.set(dateKey, { date: dateKey, count: 0, byProvider: {}, byCountry: {}, byHour: {} });
+      }
+      const day = dayMap.get(dateKey)!;
+      day.count++;
+      day.byProvider[provider] = (day.byProvider[provider] || 0) + 1;
+      day.byCountry[country] = (day.byCountry[country] || 0) + 1;
+      day.byHour[hour] = (day.byHour[hour] || 0) + 1;
+    }
+
+    console.log('[PlayerGrowth] CSV parsed', dayMap.size, 'days');
+    return Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+  } catch (err) {
+    console.error('[PlayerGrowth] CSV parse error:', err);
+    return [];
+  }
 }
 
 /* ─── component ─── */
