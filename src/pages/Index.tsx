@@ -17,6 +17,7 @@ import PostMatchReports from '@/components/PostMatchReports';
 import IplMatchTracker from '@/components/IplMatchTracker';
 
 import AudienceInsights from '@/components/AudienceInsights';
+import PerformanceTrends from '@/components/PerformanceTrends';
 import KPIDetailModal from '@/components/KPIDetailModal';
 import SevenDaySummary from '@/components/SevenDaySummary';
 import { Activity, RefreshCw, CheckCircle2, AlertCircle, X, Loader2, Download } from 'lucide-react';
@@ -236,6 +237,9 @@ const Index = () => {
 
         {/* 7-Day Summary Banner */}
         <SevenDaySummary history={history} />
+
+        {/* Performance Trends */}
+        <PerformanceTrends history={history} />
 
         {/* Top Player Spotlight */}
         <TopPlayerSpotlightPanel player={data.topPlayer} />
