@@ -82,10 +82,20 @@ const PlayerGrowth = () => {
   const handleFile = useCallback(async (file: File) => {
     const text = await file.text();
     const rows = parseCsv(text);
-    if (rows.length === 0) return;
+    if (rows.length === 0) {
+      setUploadStatus('No valid rows found in CSV');
+      return;
+    }
 
     const id = `signup-${Date.now()}`;
-    await supabase.from('signup_data').insert({ id, uploaded_at: new Date().toISOString(), data: rows });
+    const { error } = await supabase.from('signup_data').insert({ id, uploaded_at: new Date().toISOString(), data: rows });
+    if (error) {
+      console.error('Supabase insert error:', error);
+      setUploadStatus(`Upload failed: ${error.message}. Ensure signup_data table exists.`);
+    } else {
+      setUploadStatus(`${rows.length} signups loaded from ${file.name}`);
+      setTimeout(() => setUploadStatus(null), 3000);
+    }
     setAllRows(prev => [...prev, ...rows]);
   }, []);
 
