@@ -169,33 +169,131 @@ const PlayerGrowth = ({ externalData }: PlayerGrowthProps) => {
     }
   }, []);
 
-  /* ─── handle CSV ─── */
+  /* ─── parse Excel "Player Growth" sheet ─── */
+  const parseExcelPlayerGrowth = useCallback((buffer: ArrayBuffer): AggDay[] => {
+    const workbook = XLSX.read(buffer, { type: 'array' });
+    const sheetName = workbook.SheetNames.find(s => s.toLowerCase().includes('player growth'));
+    if (!sheetName) return [];
+    const rows: Record<string, any>[] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+    if (!rows.length) return [];
+
+    // Check if it's row-per-user format (has a "joined" column)
+    const keys = Object.keys(rows[0]).map(k => k.toLowerCase());
+    const hasJoined = keys.some(k => k.includes('joined'));
+
+    if (hasJoined) {
+      // Row-per-user: aggregate without storing PII
+      const hdr = Object.keys(rows[0]);
+      const iJoined = hdr.findIndex(h => h.toLowerCase().includes('joined'));
+      const iProvider = hdr.findIndex(h => h.toLowerCase().includes('provider'));
+      const iCountry = hdr.findIndex(h => h.toLowerCase().includes('country'));
+
+      const dayMap = new Map<string, AggDay>();
+      for (const row of rows) {
+        const vals = Object.values(row);
+        const rawDate = vals[iJoined];
+        if (!rawDate) continue;
+
+        let dt: Date | null = null;
+        if (typeof rawDate === 'number') {
+          // Excel serial date
+          dt = new Date((rawDate - 25569) * 86400 * 1000);
+        } else {
+          dt = new Date(String(rawDate));
+          if (isNaN(dt.getTime())) {
+            const parts = String(rawDate).split(/[\/\-]/);
+            if (parts.length === 3) {
+              const d = parseInt(parts[0]), m = parseInt(parts[1]) - 1, y = parseInt(parts[2]);
+              dt = new Date(y < 100 ? y + 2000 : y, m, d);
+            }
+          }
+        }
+        if (!dt || isNaN(dt.getTime())) continue;
+
+        const dateKey = dt.toISOString().slice(0, 10);
+        const hour = dt.getHours();
+        const provider = iProvider >= 0 ? String(vals[iProvider] || 'Unknown') : 'Unknown';
+        const country = iCountry >= 0 ? String(vals[iCountry] || 'Unknown') : 'Unknown';
+
+        if (!dayMap.has(dateKey)) {
+          dayMap.set(dateKey, { date: dateKey, count: 0, byProvider: {}, byCountry: {}, byHour: {} });
+        }
+        const day = dayMap.get(dateKey)!;
+        day.count++;
+        day.byProvider[provider] = (day.byProvider[provider] || 0) + 1;
+        day.byCountry[country] = (day.byCountry[country] || 0) + 1;
+        day.byHour[hour] = (day.byHour[hour] || 0) + 1;
+      }
+      return Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+    }
+
+    // Summary format: try to extract aggregated data
+    const fallbackDate = new Date().toISOString().slice(0, 10);
+    const dayMap = new Map<string, AggDay>();
+    for (const row of rows) {
+      const vals = Object.values(row);
+      const dateVal = vals[0];
+      let dateKey = fallbackDate;
+      if (dateVal) {
+        const dt = typeof dateVal === 'number'
+          ? new Date((dateVal - 25569) * 86400 * 1000)
+          : new Date(String(dateVal));
+        if (!isNaN(dt.getTime())) dateKey = dt.toISOString().slice(0, 10);
+      }
+      const count = typeof vals[1] === 'number' ? vals[1] : parseInt(String(vals[1])) || 0;
+      if (!dayMap.has(dateKey)) {
+        dayMap.set(dateKey, { date: dateKey, count: 0, byProvider: {}, byCountry: {}, byHour: {} });
+      }
+      const day = dayMap.get(dateKey)!;
+      day.count += count;
+    }
+    return Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+  }, []);
+
+  /* ─── handle file (CSV or Excel) ─── */
   const handleFile = useCallback(async (file: File) => {
-    const text = await file.text();
-    const parsed = parseCsv(text);
-    if (!parsed.length) return;
+    setUploadError(null);
+    const name = file.name.toLowerCase();
+    const isCsv = name.endsWith('.csv');
+    const isExcel = name.endsWith('.xlsx') || name.endsWith('.xls');
+
+    if (!isCsv && !isExcel) {
+      setUploadError('Unsupported file type. Please upload a .csv or .xlsx file.');
+      return;
+    }
+
+    let parsed: AggDay[] = [];
+
+    if (isCsv) {
+      const text = await file.text();
+      parsed = parseCsv(text);
+      if (!parsed.length) {
+        setUploadError('No signup data found. Ensure the CSV has a "User Joined On" column.');
+        return;
+      }
+    } else {
+      const buffer = await file.arrayBuffer();
+      parsed = parseExcelPlayerGrowth(buffer);
+      if (!parsed.length) {
+        setUploadError('No "Player Growth" sheet found in this Excel file, or the sheet is empty.');
+        return;
+      }
+    }
 
     // Merge with existing
     const map = new Map<string, AggDay>();
     days.forEach(d => map.set(d.date, d));
-    parsed.forEach(d => {
-      if (map.has(d.date)) {
-        // Replace with new upload for that date
-        map.set(d.date, d);
-      } else {
-        map.set(d.date, d);
-      }
-    });
+    parsed.forEach(d => map.set(d.date, d));
     const merged = Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date));
     setDays(merged);
     await persist(parsed);
-  }, [days, persist]);
+  }, [days, persist, parseExcelPlayerGrowth]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const f = e.dataTransfer.files[0];
-    if (f && f.name.endsWith('.csv')) handleFile(f);
+    if (f) handleFile(f);
   }, [handleFile]);
 
   /* ─── filtering ─── */
