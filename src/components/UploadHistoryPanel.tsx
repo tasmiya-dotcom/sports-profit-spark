@@ -34,10 +34,10 @@ const UploadHistoryPanel = ({ history, selectedId, onSelect, onDelete, onResetAl
       {/* All Days row */}
       <button
         onClick={() => onSelect(null)}
-        className={`w-full text-left px-3 py-2 rounded-lg mb-1 text-xs transition-colors ${
+        className={`w-full text-left px-3 py-2 rounded-lg mb-1 text-xs transition-all cursor-pointer ${
           selectedId === null
-            ? 'bg-primary/10 border border-primary/20 text-primary'
-            : 'hover:bg-muted/50 text-muted-foreground'
+            ? 'bg-primary/10 border-l-[3px] border-l-primary border border-primary/20 text-primary'
+            : 'hover:bg-primary/5 hover:border-primary/30 border border-transparent text-muted-foreground'
         }`}
       >
         <div className="flex items-center justify-between">
