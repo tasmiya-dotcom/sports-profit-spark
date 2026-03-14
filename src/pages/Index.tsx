@@ -243,7 +243,7 @@ const Index = () => {
         {/* Audience & Engagement Insights */}
         <AudienceInsights history={history} />
 
-        {/* Post-Match Reports */}
+        {/* Post-Match Reports — moved below Audience Insights */}
         <PostMatchReports />
 
         {/* IPL Match Tracker */}

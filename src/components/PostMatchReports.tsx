@@ -116,7 +116,11 @@ const PostMatchReports = () => {
       }
 
       if (data) {
-        setMatches(data.map((row: any) => row.data as PostMatch));
+        setMatches(prev => {
+          const existing = new Set(prev.map(m => m.id));
+          const fetched = data.map((row: any) => row.data as PostMatch).filter(m => !existing.has(m.id));
+          return [...prev, ...fetched].sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+        });
       }
     };
 
@@ -130,7 +134,10 @@ const PostMatchReports = () => {
       try {
         const parsed = parsePostMatchExcel(reader.result as ArrayBuffer);
         const entry: PostMatch = { ...parsed, id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, uploadedAt: new Date().toISOString() };
-        setMatches(prev => [entry, ...prev]);
+        setMatches(prev => {
+          if (prev.some(m => m.id === entry.id)) return prev;
+          return [entry, ...prev];
+        });
 
         // Persist to Supabase
         const { error: dbError } = await supabase
