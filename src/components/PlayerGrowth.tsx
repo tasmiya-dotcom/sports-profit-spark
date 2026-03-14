@@ -189,6 +189,14 @@ const PlayerGrowth = () => {
             />
           </div>
 
+          {uploadStatus && (
+            <div className={`text-xs px-3 py-2 rounded-lg border ${
+              uploadStatus.includes('failed') ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-primary/30 bg-primary/10 text-primary'
+            }`}>
+              {uploadStatus}
+            </div>
+          )}
+
           {stats && (
             <>
               {/* KPI row */}
