@@ -326,7 +326,7 @@ const PlayerGrowth = ({ externalData }: PlayerGrowthProps) => {
       const text = await file.text();
       parsed = parseCsv(text);
       if (!parsed.length) {
-        setUploadError('No signup data found. Ensure the CSV has a "User Joined On" column.');
+        setUploadError('No signup data found. Ensure the CSV has "User Joined On" in MM/DD/YYYY, hh:mm:ss AM/PM format.');
         return;
       }
     } else {
