@@ -15,7 +15,6 @@ import MarketPatternChart from '@/components/MarketPatternChart';
 import TopPlayerSpotlightPanel from '@/components/TopPlayerSpotlight';
 import PostMatchReports from '@/components/PostMatchReports';
 import IplMatchTracker from '@/components/IplMatchTracker';
-import PlayerGrowth from '@/components/PlayerGrowth';
 
 import AudienceInsights from '@/components/AudienceInsights';
 import PerformanceTrends from '@/components/PerformanceTrends';
@@ -23,7 +22,6 @@ import ExecutiveOverview from '@/components/ExecutiveOverview';
 import KPIDetailModal from '@/components/KPIDetailModal';
 import SevenDaySummary from '@/components/SevenDaySummary';
 import { Activity, RefreshCw, CheckCircle2, AlertCircle, X, Loader2, Download } from 'lucide-react';
-import type { PlayerGrowthDay } from '@/lib/types';
 
 const fmt = (v: number) => `€${Math.round(Math.abs(v)).toLocaleString()}`;
 const fmtSigned = (v: number) => `${v >= 0 ? '+' : '-'}€${Math.round(Math.abs(v)).toLocaleString()}`;
@@ -258,20 +256,6 @@ const Index = () => {
 
         {/* IPL Match Tracker */}
         <IplMatchTracker />
-
-        {/* Player Growth — merge all playerGrowth data from history */}
-        <PlayerGrowth externalData={
-          history.reduce<PlayerGrowthDay[]>((acc, h) => {
-            if (h.data?.playerGrowth) {
-              h.data.playerGrowth.forEach(pg => {
-                const existing = acc.findIndex(a => a.date === pg.date);
-                if (existing >= 0) acc[existing] = pg;
-                else acc.push(pg);
-              });
-            }
-            return acc;
-          }, [])
-        } />
 
         {/* P&L + Bet Split row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
