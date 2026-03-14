@@ -116,7 +116,11 @@ const PostMatchReports = () => {
       }
 
       if (data) {
-        setMatches(data.map((row: any) => row.data as PostMatch));
+        setMatches(prev => {
+          const existing = new Set(prev.map(m => m.id));
+          const fetched = data.map((row: any) => row.data as PostMatch).filter(m => !existing.has(m.id));
+          return [...prev, ...fetched].sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+        });
       }
     };
 
