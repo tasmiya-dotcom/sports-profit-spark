@@ -24,7 +24,7 @@ const UploadHistoryPanel = ({ history, selectedId, onSelect, onDelete, onResetAl
         </div>
         <button
           onClick={onResetAll}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive hover:scale-105 transition-all cursor-pointer"
         >
           <RotateCcw className="w-3 h-3" />
           Reset All
