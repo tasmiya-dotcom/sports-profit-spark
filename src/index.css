@@ -141,4 +141,14 @@
     height: 3px;
     background: linear-gradient(90deg, hsl(var(--ipl-orange)) 0%, hsl(var(--ipl-blue)) 100%);
   }
+
+  .recharts-tooltip-wrapper .recharts-default-tooltip,
+  .recharts-tooltip-wrapper .recharts-default-tooltip *,
+  .recharts-tooltip-wrapper .recharts-tooltip-label,
+  .recharts-tooltip-wrapper .recharts-tooltip-item,
+  .recharts-tooltip-wrapper .recharts-tooltip-item-name,
+  .recharts-tooltip-wrapper .recharts-tooltip-item-separator,
+  .recharts-tooltip-wrapper .recharts-tooltip-item-value {
+    color: #ffffff !important;
+  }
 }

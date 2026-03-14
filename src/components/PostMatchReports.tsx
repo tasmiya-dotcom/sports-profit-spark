@@ -177,7 +177,7 @@ const PostMatchReports = () => {
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="name" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} angle={-30} textAnchor="end" height={50} />
                       <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} tickFormatter={v => `€${(v / 1000).toFixed(0)}k`} />
-                      <Tooltip contentStyle={{ background: '#1e1e1e', border: '1px solid #00e554', borderRadius: 8, color: '#ffffff' }} labelStyle={{ color: '#888888' }} formatter={(v: number) => [`€${v.toLocaleString()}`, 'Turnover']} />
+                      <Tooltip contentStyle={{ background: '#1e1e1e', border: '1px solid #00e554', borderRadius: 8, color: '#ffffff' }} labelStyle={{ color: '#ffffff' }} formatter={(v: number) => [`€${v.toLocaleString()}`, 'Turnover']} />
                       <Bar dataKey="turnover" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>

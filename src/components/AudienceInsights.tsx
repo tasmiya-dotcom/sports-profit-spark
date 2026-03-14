@@ -98,7 +98,7 @@ const tooltipStyle = {
   color: '#ffffff',
   fontSize: 12,
 };
-const tooltipLabelStyle = { color: '#888888' };
+const tooltipLabelStyle = { color: '#ffffff' };
 
 const AudienceInsights = ({ data }: Props) => {
   const [open, setOpen] = useState(true);
