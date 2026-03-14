@@ -106,7 +106,7 @@ const tooltipLabelStyle = { color: '#ffffff' };
 const tooltipItemStyle = { color: '#ffffff' };
 
 const AudienceInsights = ({ history }: Props) => {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
 
   // Filter entries that have valid data
   const validEntries = useMemo(() =>

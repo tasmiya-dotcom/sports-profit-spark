@@ -87,7 +87,7 @@ function parseIplCsv(text: string): Omit<IplMatch, 'id' | 'fileName' | 'uploaded
 }
 
 const IplMatchTracker = () => {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [matches, setMatches] = useState<IplMatch[]>([]);
 
   // Fetch from Supabase on mount
