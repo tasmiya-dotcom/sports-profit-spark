@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ChevronDown, Upload, Users, CalendarDays, Globe, Zap, TrendingUp, Crown, Clock } from 'lucide-react';
+import { ChevronDown, Upload, Users, CalendarDays, Globe, Zap, TrendingUp, Crown, Clock, AlertCircle } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, LineChart, Line, Area, AreaChart, CartesianGrid,
@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import * as XLSX from 'xlsx';
 import type { PlayerGrowthDay } from '@/lib/types';
 
 /* ─── country code → name ─── */
@@ -108,6 +109,7 @@ const PlayerGrowth = ({ externalData }: PlayerGrowthProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [days, setDays] = useState<AggDay[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [customTime, setCustomTime] = useState('');
@@ -167,33 +169,131 @@ const PlayerGrowth = ({ externalData }: PlayerGrowthProps) => {
     }
   }, []);
 
-  /* ─── handle CSV ─── */
+  /* ─── parse Excel "Player Growth" sheet ─── */
+  const parseExcelPlayerGrowth = useCallback((buffer: ArrayBuffer): AggDay[] => {
+    const workbook = XLSX.read(buffer, { type: 'array' });
+    const sheetName = workbook.SheetNames.find(s => s.toLowerCase().includes('player growth'));
+    if (!sheetName) return [];
+    const rows: Record<string, any>[] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+    if (!rows.length) return [];
+
+    // Check if it's row-per-user format (has a "joined" column)
+    const keys = Object.keys(rows[0]).map(k => k.toLowerCase());
+    const hasJoined = keys.some(k => k.includes('joined'));
+
+    if (hasJoined) {
+      // Row-per-user: aggregate without storing PII
+      const hdr = Object.keys(rows[0]);
+      const iJoined = hdr.findIndex(h => h.toLowerCase().includes('joined'));
+      const iProvider = hdr.findIndex(h => h.toLowerCase().includes('provider'));
+      const iCountry = hdr.findIndex(h => h.toLowerCase().includes('country'));
+
+      const dayMap = new Map<string, AggDay>();
+      for (const row of rows) {
+        const vals = Object.values(row);
+        const rawDate = vals[iJoined];
+        if (!rawDate) continue;
+
+        let dt: Date | null = null;
+        if (typeof rawDate === 'number') {
+          // Excel serial date
+          dt = new Date((rawDate - 25569) * 86400 * 1000);
+        } else {
+          dt = new Date(String(rawDate));
+          if (isNaN(dt.getTime())) {
+            const parts = String(rawDate).split(/[\/\-]/);
+            if (parts.length === 3) {
+              const d = parseInt(parts[0]), m = parseInt(parts[1]) - 1, y = parseInt(parts[2]);
+              dt = new Date(y < 100 ? y + 2000 : y, m, d);
+            }
+          }
+        }
+        if (!dt || isNaN(dt.getTime())) continue;
+
+        const dateKey = dt.toISOString().slice(0, 10);
+        const hour = dt.getHours();
+        const provider = iProvider >= 0 ? String(vals[iProvider] || 'Unknown') : 'Unknown';
+        const country = iCountry >= 0 ? String(vals[iCountry] || 'Unknown') : 'Unknown';
+
+        if (!dayMap.has(dateKey)) {
+          dayMap.set(dateKey, { date: dateKey, count: 0, byProvider: {}, byCountry: {}, byHour: {} });
+        }
+        const day = dayMap.get(dateKey)!;
+        day.count++;
+        day.byProvider[provider] = (day.byProvider[provider] || 0) + 1;
+        day.byCountry[country] = (day.byCountry[country] || 0) + 1;
+        day.byHour[hour] = (day.byHour[hour] || 0) + 1;
+      }
+      return Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+    }
+
+    // Summary format: try to extract aggregated data
+    const fallbackDate = new Date().toISOString().slice(0, 10);
+    const dayMap = new Map<string, AggDay>();
+    for (const row of rows) {
+      const vals = Object.values(row);
+      const dateVal = vals[0];
+      let dateKey = fallbackDate;
+      if (dateVal) {
+        const dt = typeof dateVal === 'number'
+          ? new Date((dateVal - 25569) * 86400 * 1000)
+          : new Date(String(dateVal));
+        if (!isNaN(dt.getTime())) dateKey = dt.toISOString().slice(0, 10);
+      }
+      const count = typeof vals[1] === 'number' ? vals[1] : parseInt(String(vals[1])) || 0;
+      if (!dayMap.has(dateKey)) {
+        dayMap.set(dateKey, { date: dateKey, count: 0, byProvider: {}, byCountry: {}, byHour: {} });
+      }
+      const day = dayMap.get(dateKey)!;
+      day.count += count;
+    }
+    return Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+  }, []);
+
+  /* ─── handle file (CSV or Excel) ─── */
   const handleFile = useCallback(async (file: File) => {
-    const text = await file.text();
-    const parsed = parseCsv(text);
-    if (!parsed.length) return;
+    setUploadError(null);
+    const name = file.name.toLowerCase();
+    const isCsv = name.endsWith('.csv');
+    const isExcel = name.endsWith('.xlsx') || name.endsWith('.xls');
+
+    if (!isCsv && !isExcel) {
+      setUploadError('Unsupported file type. Please upload a .csv or .xlsx file.');
+      return;
+    }
+
+    let parsed: AggDay[] = [];
+
+    if (isCsv) {
+      const text = await file.text();
+      parsed = parseCsv(text);
+      if (!parsed.length) {
+        setUploadError('No signup data found. Ensure the CSV has a "User Joined On" column.');
+        return;
+      }
+    } else {
+      const buffer = await file.arrayBuffer();
+      parsed = parseExcelPlayerGrowth(buffer);
+      if (!parsed.length) {
+        setUploadError('No "Player Growth" sheet found in this Excel file, or the sheet is empty.');
+        return;
+      }
+    }
 
     // Merge with existing
     const map = new Map<string, AggDay>();
     days.forEach(d => map.set(d.date, d));
-    parsed.forEach(d => {
-      if (map.has(d.date)) {
-        // Replace with new upload for that date
-        map.set(d.date, d);
-      } else {
-        map.set(d.date, d);
-      }
-    });
+    parsed.forEach(d => map.set(d.date, d));
     const merged = Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date));
     setDays(merged);
     await persist(parsed);
-  }, [days, persist]);
+  }, [days, persist, parseExcelPlayerGrowth]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const f = e.dataTransfer.files[0];
-    if (f && f.name.endsWith('.csv')) handleFile(f);
+    if (f) handleFile(f);
   }, [handleFile]);
 
   /* ─── filtering ─── */
@@ -304,7 +404,7 @@ const PlayerGrowth = ({ externalData }: PlayerGrowthProps) => {
 
       {isOpen && (
         <div className="px-5 pb-5 space-y-5">
-          {/* CSV Upload */}
+          {/* File Upload */}
           <div
             className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
               isDragging ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
@@ -316,21 +416,28 @@ const PlayerGrowth = ({ externalData }: PlayerGrowthProps) => {
           >
             <Upload className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              Drop a <span className="text-primary font-medium">CSV</span> file or click to upload
+              Drop a <span className="text-primary font-medium">CSV</span> or <span className="text-primary font-medium">Excel</span> file or click to upload
             </p>
             <p className="text-xs text-muted-foreground/60 mt-1">
-              Columns: Username, Country Code, Phone, User Joined On, ACS/Click ID, Provider
+              CSV columns: Username, Country Code, Phone, User Joined On, Provider — or Excel with "Player Growth" sheet
             </p>
             <input
               ref={fileRef}
               type="file"
-              accept=".csv"
+              accept=".csv,.xlsx,.xls"
               className="hidden"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }}
             />
           </div>
 
-          {days.length === 0 && (
+          {uploadError && (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{uploadError}</span>
+            </div>
+          )}
+
+          {days.length === 0 && !uploadError && (
             <p className="text-sm text-muted-foreground text-center py-4">No signup data yet. Upload a CSV to get started.</p>
           )}
 
