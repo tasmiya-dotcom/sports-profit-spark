@@ -186,7 +186,7 @@ const PostMatchReports = () => {
 
   return (
     <div className="kpi-card !p-0 overflow-hidden">
-      <button onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-card/80 transition-colors">
+      <button onClick={() => setIsOpen(!isOpen)} className="section-toggle w-full flex items-center justify-between px-5 py-3.5">
         <div className="flex items-center gap-2.5">
           <Trophy className="w-5 h-5 text-primary" />
           <span className="text-sm font-bold tracking-wider uppercase text-foreground">🏆 POST-MATCH REPORTS</span>
@@ -237,9 +237,9 @@ const PostMatchReports = () => {
                   const isExpanded = expandedId === m.id;
                   const isConfirming = confirmDeleteId === m.id;
                   return (
-                    <div key={m.id} className="bg-background border border-border rounded-xl overflow-hidden">
+                    <div key={m.id} className="bg-background border border-border rounded-xl overflow-hidden transition-all duration-200 hover:border-primary/50 hover:shadow-[0_0_12px_hsl(145_100%_45%/0.12)]">
                       <div className="flex items-center">
-                        <button onClick={() => setExpandedId(isExpanded ? null : m.id)} className="flex-1 text-left px-4 py-3 hover:bg-card/50 transition-colors">
+                        <button onClick={() => setExpandedId(isExpanded ? null : m.id)} className="flex-1 text-left px-4 py-3 hover:bg-primary/5 transition-colors cursor-pointer">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-sm font-semibold text-foreground">{m.matchName}</p>

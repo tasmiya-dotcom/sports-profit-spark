@@ -12,7 +12,7 @@ const MarketPatternChart = ({ data }: MarketPatternChartProps) => {
 
   return (
     <div className="kpi-card !p-0 overflow-hidden">
-      <button onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-card/80 transition-colors">
+      <button onClick={() => setIsOpen(!isOpen)} className="section-toggle w-full flex items-center justify-between px-5 py-3.5">
         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Market Patterns</h3>
         <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>

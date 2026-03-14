@@ -87,7 +87,7 @@ function parseIplCsv(text: string): Omit<IplMatch, 'id' | 'fileName' | 'uploaded
 }
 
 const IplMatchTracker = () => {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [matches, setMatches] = useState<IplMatch[]>([]);
 
   // Fetch from Supabase on mount
@@ -179,7 +179,7 @@ const IplMatchTracker = () => {
       <div className="ipl-header-stripe" />
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-5 py-3.5 bg-card hover:bg-secondary/30 transition-colors"
+        className="section-toggle w-full flex items-center justify-between px-5 py-3.5 bg-card"
       >
         <span className="text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
           🏏 IPL 2026 — MATCH TRACKER

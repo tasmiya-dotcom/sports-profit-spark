@@ -24,7 +24,7 @@ const UploadHistoryPanel = ({ history, selectedId, onSelect, onDelete, onResetAl
         </div>
         <button
           onClick={onResetAll}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive hover:scale-105 transition-all cursor-pointer"
         >
           <RotateCcw className="w-3 h-3" />
           Reset All
@@ -34,10 +34,10 @@ const UploadHistoryPanel = ({ history, selectedId, onSelect, onDelete, onResetAl
       {/* All Days row */}
       <button
         onClick={() => onSelect(null)}
-        className={`w-full text-left px-3 py-2 rounded-lg mb-1 text-xs transition-colors ${
+        className={`w-full text-left px-3 py-2 rounded-lg mb-1 text-xs transition-all cursor-pointer ${
           selectedId === null
-            ? 'bg-primary/10 border border-primary/20 text-primary'
-            : 'hover:bg-muted/50 text-muted-foreground'
+            ? 'bg-primary/10 border-l-[3px] border-l-primary border border-primary/20 text-primary'
+            : 'hover:bg-primary/5 hover:border-primary/30 border border-transparent text-muted-foreground'
         }`}
       >
         <div className="flex items-center justify-between">
@@ -57,10 +57,10 @@ const UploadHistoryPanel = ({ history, selectedId, onSelect, onDelete, onResetAl
             <div
               key={entry.id}
               onClick={() => onSelect(entry.id)}
-              className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors ${
+              className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-xs transition-all ${
                 isActive
-                  ? 'bg-primary/10 border border-primary/20'
-                  : 'hover:bg-muted/50'
+                  ? 'bg-primary/10 border-l-[3px] border-l-primary border border-primary/20'
+                  : 'hover:bg-primary/5 hover:border-primary/30 border border-transparent'
               }`}
             >
               <div className="flex-1 min-w-0">
