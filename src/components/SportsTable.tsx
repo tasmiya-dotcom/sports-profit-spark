@@ -19,7 +19,7 @@ const SportsTable = ({ data }: SportsTableProps) => {
               <XAxis type="number" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`} />
               <YAxis type="category" dataKey="sport" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} width={75} />
               <Tooltip
-                contentStyle={{ background: 'hsl(220 18% 10%)', border: '1px solid hsl(220 14% 18%)', borderRadius: 8, color: 'hsl(210 20% 92%)' }}
+                contentStyle={{ background: 'hsl(220 18% 10%)', border: '1px solid hsl(220 14% 18%)', borderRadius: 8, color: '#ffffff' }}
                 formatter={(v: number) => [`€${v.toLocaleString()}`, 'Turnover']}
               />
               <Bar dataKey="turnover" fill="#00e554" radius={[0, 4, 4, 0]} name="Turnover" />
@@ -36,7 +36,7 @@ const SportsTable = ({ data }: SportsTableProps) => {
               <XAxis type="number" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`} />
               <YAxis type="category" dataKey="sport" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} width={75} />
               <Tooltip
-                contentStyle={{ background: 'hsl(220 18% 10%)', border: '1px solid hsl(220 14% 18%)', borderRadius: 8, color: 'hsl(210 20% 92%)' }}
+                contentStyle={{ background: 'hsl(220 18% 10%)', border: '1px solid hsl(220 14% 18%)', borderRadius: 8, color: '#ffffff' }}
                 formatter={(v: number) => [`€${v.toLocaleString()}`, 'P&L']}
               />
               <Bar dataKey="pnl" radius={[0, 4, 4, 0]} name="P&L">

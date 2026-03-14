@@ -95,7 +95,7 @@ const tooltipStyle = {
   background: 'hsl(var(--card))',
   border: '1px solid hsl(var(--border))',
   borderRadius: 8,
-  color: 'hsl(var(--foreground))',
+  color: '#ffffff',
   fontSize: 12,
 };
 
