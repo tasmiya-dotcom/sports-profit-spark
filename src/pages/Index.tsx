@@ -232,6 +232,9 @@ const Index = () => {
           <KPICard title="High Risk Users" value={kpi.highRiskUsers.toString()} icon="warning" trend={kpi.highRiskUsers > 0 ? 'down' : 'neutral'} onClick={() => setKpiModal('highRisk')} />
         </div>
 
+        {/* 7-Day Summary Banner */}
+        <SevenDaySummary history={history} />
+
         {/* Top Player Spotlight */}
         <TopPlayerSpotlightPanel player={data.topPlayer} />
 
