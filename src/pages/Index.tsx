@@ -210,6 +210,9 @@ const Index = () => {
       )}
 
       <main ref={dashboardRef} className="max-w-[1600px] mx-auto p-6 space-y-6">
+        {/* Executive Overview */}
+        <ExecutiveOverview history={history} />
+
         {/* Upload History Panel */}
         <UploadHistoryPanel
           history={history}
