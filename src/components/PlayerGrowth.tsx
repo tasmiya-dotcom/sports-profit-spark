@@ -356,6 +356,8 @@ const PlayerGrowth = ({ externalData }: PlayerGrowthProps) => {
   /* ─── handle file (CSV or Excel) ─── */
   const handleFile = useCallback(async (file: File) => {
     setUploadError(null);
+    console.log('[PlayerGrowth] Processing file:', file.name, 'size:', file.size);
+
     const name = file.name.toLowerCase();
     const isCsv = name.endsWith('.csv');
     const isExcel = name.endsWith('.xlsx') || name.endsWith('.xls');
@@ -367,21 +369,30 @@ const PlayerGrowth = ({ externalData }: PlayerGrowthProps) => {
 
     let parsed: AggDay[] = [];
 
-    if (isCsv) {
-      const text = await file.text();
-      parsed = parseCsv(text);
-      if (!parsed.length) {
-        setUploadError('No signup data found. Ensure the CSV has "User Joined On" in MM/DD/YYYY, hh:mm:ss AM/PM format.');
-        return;
+    try {
+      if (isCsv) {
+        const text = await file.text();
+        console.log('[PlayerGrowth] CSV text length:', text.length, 'first 200 chars:', text.slice(0, 200));
+        parsed = parseCsv(text);
+        if (!parsed.length) {
+          setUploadError('No signup data found. Check console for details. Ensure the CSV has a "User Joined On" column with dates in MM/DD/YYYY format.');
+          return;
+        }
+      } else {
+        const buffer = await file.arrayBuffer();
+        parsed = parseExcelPlayerGrowth(buffer);
+        if (!parsed.length) {
+          setUploadError('No "Player Growth" sheet found in this Excel file, or the sheet data could not be parsed. Check console for sheet names detected.');
+          return;
+        }
       }
-    } else {
-      const buffer = await file.arrayBuffer();
-      parsed = parseExcelPlayerGrowth(buffer);
-      if (!parsed.length) {
-        setUploadError('No "Player Growth" sheet found in this Excel file, or the sheet is empty.');
-        return;
-      }
+    } catch (err) {
+      console.error('[PlayerGrowth] File processing error:', err);
+      setUploadError(`Error processing file: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      return;
     }
+
+    console.log('[PlayerGrowth] Successfully parsed', parsed.length, 'days, total signups:', parsed.reduce((s, d) => s + d.count, 0));
 
     // Merge with existing
     const map = new Map<string, AggDay>();
