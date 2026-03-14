@@ -109,6 +109,7 @@ const PlayerGrowth = ({ externalData }: PlayerGrowthProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [days, setDays] = useState<AggDay[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [customTime, setCustomTime] = useState('');
