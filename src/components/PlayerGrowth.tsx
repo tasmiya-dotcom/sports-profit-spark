@@ -261,80 +261,96 @@ const PlayerGrowth = ({ externalData }: PlayerGrowthProps) => {
 
   /* ─── parse Excel "Player Growth" sheet ─── */
   const parseExcelPlayerGrowth = useCallback((buffer: ArrayBuffer): AggDay[] => {
-    const workbook = XLSX.read(buffer, { type: 'array' });
-    const sheetName = workbook.SheetNames.find(name => normalizeSheetName(name) === 'player growth');
-    if (!sheetName) return [];
+    try {
+      const workbook = XLSX.read(buffer, { type: 'array', cellDates: false });
+      console.log('[PlayerGrowth] Excel sheets found:', workbook.SheetNames);
 
-    const rows: Record<string, unknown>[] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
-    if (!rows.length) return [];
+      // Flexible sheet name matching: exact match first, then includes
+      let sheetName = workbook.SheetNames.find(name => normalizeSheetName(name) === 'player growth');
+      if (!sheetName) {
+        sheetName = workbook.SheetNames.find(name => normalizeSheetName(name).includes('player growth'));
+      }
+      if (!sheetName) {
+        sheetName = workbook.SheetNames.find(name => normalizeSheetName(name).includes('player') || normalizeSheetName(name).includes('signup') || normalizeSheetName(name).includes('growth'));
+      }
 
-    const headers = Object.keys(rows[0]);
-    const joinedKey = headers.find(h => {
-      const n = normalizeHeader(h);
-      return n.includes('user joined on') || n.includes('joined on') || n.includes('user joined') || n.includes('joined');
-    });
-    const providerKey = headers.find(h => normalizeHeader(h).includes('provider'));
-    const countryKey = headers.find(h => normalizeHeader(h).includes('country'));
+      if (!sheetName) {
+        console.warn('[PlayerGrowth] No matching sheet. Available:', workbook.SheetNames.map(s => `"${s}"`).join(', '));
+        return [];
+      }
 
-    if (joinedKey) {
-      // Row-per-user: aggregate without storing PII
+      console.log('[PlayerGrowth] Using sheet:', sheetName);
+      const rows: Record<string, unknown>[] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '', raw: true });
+      if (!rows.length) { console.warn('[PlayerGrowth] Sheet is empty'); return []; }
+
+      const headers = Object.keys(rows[0]);
+      console.log('[PlayerGrowth] Excel headers:', headers);
+
+      const joinedKey = headers.find(h => {
+        const n = normalizeHeader(h);
+        return n.includes('user joined on') || n.includes('joined on') || n.includes('user joined') || n.includes('joined');
+      });
+      const providerKey = headers.find(h => normalizeHeader(h).includes('provider'));
+      const countryKey = headers.find(h => normalizeHeader(h).includes('country'));
+
+      console.log('[PlayerGrowth] Excel keys — joined:', joinedKey, 'provider:', providerKey, 'country:', countryKey);
+
+      if (joinedKey) {
+        // Row-per-user: aggregate without storing PII
+        const dayMap = new Map<string, AggDay>();
+        let parseFailCount = 0;
+        for (const row of rows) {
+          const dt = parseJoinedOnDate(row[joinedKey]);
+          if (!dt) { parseFailCount++; continue; }
+
+          const dateKey = toDateKey(dt);
+          const hour = dt.getHours();
+          const providerRaw = providerKey ? String(row[providerKey] ?? '').trim() : '';
+          const countryRaw = countryKey ? String(row[countryKey] ?? '').trim() : '';
+          const provider = providerRaw || 'Unknown';
+          const country = countryRaw || 'Unknown';
+
+          if (!dayMap.has(dateKey)) {
+            dayMap.set(dateKey, { date: dateKey, count: 0, byProvider: {}, byCountry: {}, byHour: {} });
+          }
+          const day = dayMap.get(dateKey)!;
+          day.count++;
+          day.byProvider[provider] = (day.byProvider[provider] || 0) + 1;
+          day.byCountry[country] = (day.byCountry[country] || 0) + 1;
+          day.byHour[hour] = (day.byHour[hour] || 0) + 1;
+        }
+        if (parseFailCount > 0) console.warn('[PlayerGrowth] Excel: failed to parse date for', parseFailCount, 'rows. Sample value:', rows[0]?.[joinedKey]);
+        console.log('[PlayerGrowth] Excel parsed', dayMap.size, 'days from', rows.length, 'rows');
+        return Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+      }
+
+      // Summary format fallback
+      console.log('[PlayerGrowth] No joined column, trying summary format');
       const dayMap = new Map<string, AggDay>();
       for (const row of rows) {
-        const dt = parseJoinedOnDate(row[joinedKey]);
-        if (!dt) continue;
+        const values = Object.values(row);
+        let rowDate: Date | null = null;
+        let rowCount = 0;
 
-        const dateKey = toDateKey(dt);
-        const hour = dt.getHours();
-        const providerRaw = providerKey ? String(row[providerKey] ?? '').trim() : '';
-        const countryRaw = countryKey ? String(row[countryKey] ?? '').trim() : '';
-        const provider = providerRaw || 'Unknown';
-        const country = countryRaw || 'Unknown';
-
-        if (!dayMap.has(dateKey)) {
-          dayMap.set(dateKey, { date: dateKey, count: 0, byProvider: {}, byCountry: {}, byHour: {} });
-        }
-        const day = dayMap.get(dateKey)!;
-        day.count++;
-        day.byProvider[provider] = (day.byProvider[provider] || 0) + 1;
-        day.byCountry[country] = (day.byCountry[country] || 0) + 1;
-        day.byHour[hour] = (day.byHour[hour] || 0) + 1;
-      }
-      return Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
-    }
-
-    // Summary format fallback: pull date + total from rows that contain both
-    const dayMap = new Map<string, AggDay>();
-    for (const row of rows) {
-      const values = Object.values(row);
-      let rowDate: Date | null = null;
-      let rowCount = 0;
-
-      for (const value of values) {
-        if (!rowDate) {
-          rowDate = parseJoinedOnDate(value);
-        }
-
-        if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
-          rowCount = Math.max(rowCount, Math.floor(value));
-        } else if (typeof value === 'string') {
-          const parsed = parseInt(value.replace(/[^0-9]/g, ''), 10);
-          if (!Number.isNaN(parsed) && parsed > 0) {
-            rowCount = Math.max(rowCount, parsed);
+        for (const value of values) {
+          if (!rowDate) rowDate = parseJoinedOnDate(value);
+          if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+            rowCount = Math.max(rowCount, Math.floor(value));
+          } else if (typeof value === 'string') {
+            const parsed = parseInt(value.replace(/[^0-9]/g, ''), 10);
+            if (!Number.isNaN(parsed) && parsed > 0) rowCount = Math.max(rowCount, parsed);
           }
         }
+        if (!rowDate || rowCount <= 0) continue;
+        const dateKey = toDateKey(rowDate);
+        if (!dayMap.has(dateKey)) dayMap.set(dateKey, { date: dateKey, count: 0, byProvider: {}, byCountry: {}, byHour: {} });
+        dayMap.get(dateKey)!.count += rowCount;
       }
-
-      if (!rowDate || rowCount <= 0) continue;
-
-      const dateKey = toDateKey(rowDate);
-      if (!dayMap.has(dateKey)) {
-        dayMap.set(dateKey, { date: dateKey, count: 0, byProvider: {}, byCountry: {}, byHour: {} });
-      }
-      const day = dayMap.get(dateKey)!;
-      day.count += rowCount;
+      return Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+    } catch (err) {
+      console.error('[PlayerGrowth] Excel parse error:', err);
+      return [];
     }
-
-    return Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
   }, []);
 
   /* ─── handle file (CSV or Excel) ─── */
