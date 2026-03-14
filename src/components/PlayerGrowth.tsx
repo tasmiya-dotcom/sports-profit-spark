@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ChevronDown, Upload, Users, CalendarDays, Globe, Zap, TrendingUp, Crown, Clock } from 'lucide-react';
+import { ChevronDown, Upload, Users, CalendarDays, Globe, Zap, TrendingUp, Crown, Clock, AlertCircle } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, LineChart, Line, Area, AreaChart, CartesianGrid,
@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import * as XLSX from 'xlsx';
 import type { PlayerGrowthDay } from '@/lib/types';
 
 /* ─── country code → name ─── */
