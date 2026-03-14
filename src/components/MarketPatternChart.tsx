@@ -17,7 +17,7 @@ const MarketPatternChart = ({ data }: MarketPatternChartProps) => {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 14% 18%)" />
               <XAxis type="number" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} />
               <YAxis type="category" dataKey="market" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} width={95} />
-              <Tooltip contentStyle={{ background: 'hsl(220 18% 10%)', border: '1px solid hsl(220 14% 18%)', borderRadius: 8, color: '#ffffff' }} labelStyle={{ color: '#ffffff' }} />
+              <Tooltip contentStyle={{ background: '#1e1e1e', border: '1px solid #00e554', borderRadius: 8, color: '#ffffff' }} labelStyle={{ color: '#888888' }} />
               <Bar dataKey="count" fill="hsl(142 72% 45%)" radius={[0, 4, 4, 0]} name="Count" />
             </BarChart>
           </ResponsiveContainer>
