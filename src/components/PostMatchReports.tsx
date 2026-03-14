@@ -134,7 +134,10 @@ const PostMatchReports = () => {
       try {
         const parsed = parsePostMatchExcel(reader.result as ArrayBuffer);
         const entry: PostMatch = { ...parsed, id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, uploadedAt: new Date().toISOString() };
-        setMatches(prev => [entry, ...prev]);
+        setMatches(prev => {
+          if (prev.some(m => m.id === entry.id)) return prev;
+          return [entry, ...prev];
+        });
 
         // Persist to Supabase
         const { error: dbError } = await supabase
