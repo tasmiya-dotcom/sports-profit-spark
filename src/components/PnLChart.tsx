@@ -31,8 +31,9 @@ const PnLChart = ({ history, selectedId, onSelectDay }: PnLChartProps) => {
           <XAxis dataKey="date" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} />
           <YAxis tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`} />
           <Tooltip
-            contentStyle={{ background: '#1e1e1e', border: '1px solid #00e554', borderRadius: 8, color: '#ffffff' }}
+            contentStyle={{ backgroundColor: '#1e1e1e', border: '1px solid #00e554', borderRadius: '8px' }}
             labelStyle={{ color: '#ffffff' }}
+            itemStyle={{ color: '#ffffff' }}
             formatter={(value: number) => [`€${value.toLocaleString()}`, 'P&L']}
             cursor={{ fill: 'hsl(220 14% 18% / 0.5)' }}
           />
