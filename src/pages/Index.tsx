@@ -241,7 +241,7 @@ const Index = () => {
         <TopPlayerSpotlightPanel player={data.topPlayer} />
 
         {/* Audience & Engagement Insights */}
-        <AudienceInsights data={data} />
+        <AudienceInsights history={history} />
 
         {/* Post-Match Reports */}
         <PostMatchReports />
