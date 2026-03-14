@@ -64,6 +64,7 @@ function normalizeDate(raw: string): string {
 const PlayerGrowth = () => {
   const [allRows, setAllRows] = useState<SignupRow[]>([]);
   const [isOpen, setIsOpen] = useState(true);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
