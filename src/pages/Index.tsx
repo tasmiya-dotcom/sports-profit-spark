@@ -14,7 +14,7 @@ import MarketPatternChart from '@/components/MarketPatternChart';
 import TopPlayerSpotlightPanel from '@/components/TopPlayerSpotlight';
 import PostMatchReports from '@/components/PostMatchReports';
 import IplMatchTracker from '@/components/IplMatchTracker';
-import PlayerGrowth from '@/components/PlayerGrowth';
+
 import AudienceInsights from '@/components/AudienceInsights';
 import KPIDetailModal from '@/components/KPIDetailModal';
 import SevenDaySummary from '@/components/SevenDaySummary';
