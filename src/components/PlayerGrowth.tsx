@@ -233,48 +233,33 @@ const PlayerGrowth = ({ externalData }: PlayerGrowthProps) => {
   /* ─── parse Excel "Player Growth" sheet ─── */
   const parseExcelPlayerGrowth = useCallback((buffer: ArrayBuffer): AggDay[] => {
     const workbook = XLSX.read(buffer, { type: 'array' });
-    const sheetName = workbook.SheetNames.find(s => s.toLowerCase().includes('player growth'));
+    const sheetName = workbook.SheetNames.find(name => normalizeSheetName(name) === 'player growth');
     if (!sheetName) return [];
-    const rows: Record<string, any>[] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    const rows: Record<string, unknown>[] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
     if (!rows.length) return [];
 
-    // Check if it's row-per-user format (has a "joined" column)
-    const keys = Object.keys(rows[0]).map(k => k.toLowerCase());
-    const hasJoined = keys.some(k => k.includes('joined'));
+    const headers = Object.keys(rows[0]);
+    const joinedKey = headers.find(h => {
+      const n = normalizeHeader(h);
+      return n.includes('user joined on') || n.includes('joined on') || n.includes('user joined') || n.includes('joined');
+    });
+    const providerKey = headers.find(h => normalizeHeader(h).includes('provider'));
+    const countryKey = headers.find(h => normalizeHeader(h).includes('country'));
 
-    if (hasJoined) {
+    if (joinedKey) {
       // Row-per-user: aggregate without storing PII
-      const hdr = Object.keys(rows[0]);
-      const iJoined = hdr.findIndex(h => h.toLowerCase().includes('joined'));
-      const iProvider = hdr.findIndex(h => h.toLowerCase().includes('provider'));
-      const iCountry = hdr.findIndex(h => h.toLowerCase().includes('country'));
-
       const dayMap = new Map<string, AggDay>();
       for (const row of rows) {
-        const vals = Object.values(row);
-        const rawDate = vals[iJoined];
-        if (!rawDate) continue;
+        const dt = parseJoinedOnDate(row[joinedKey]);
+        if (!dt) continue;
 
-        let dt: Date | null = null;
-        if (typeof rawDate === 'number') {
-          // Excel serial date
-          dt = new Date((rawDate - 25569) * 86400 * 1000);
-        } else {
-          dt = new Date(String(rawDate));
-          if (isNaN(dt.getTime())) {
-            const parts = String(rawDate).split(/[\/\-]/);
-            if (parts.length === 3) {
-              const d = parseInt(parts[0]), m = parseInt(parts[1]) - 1, y = parseInt(parts[2]);
-              dt = new Date(y < 100 ? y + 2000 : y, m, d);
-            }
-          }
-        }
-        if (!dt || isNaN(dt.getTime())) continue;
-
-        const dateKey = dt.toISOString().slice(0, 10);
+        const dateKey = toDateKey(dt);
         const hour = dt.getHours();
-        const provider = iProvider >= 0 ? String(vals[iProvider] || 'Unknown') : 'Unknown';
-        const country = iCountry >= 0 ? String(vals[iCountry] || 'Unknown') : 'Unknown';
+        const providerRaw = providerKey ? String(row[providerKey] ?? '').trim() : '';
+        const countryRaw = countryKey ? String(row[countryKey] ?? '').trim() : '';
+        const provider = providerRaw || 'Unknown';
+        const country = countryRaw || 'Unknown';
 
         if (!dayMap.has(dateKey)) {
           dayMap.set(dateKey, { date: dateKey, count: 0, byProvider: {}, byCountry: {}, byHour: {} });
@@ -288,26 +273,38 @@ const PlayerGrowth = ({ externalData }: PlayerGrowthProps) => {
       return Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
     }
 
-    // Summary format: try to extract aggregated data
-    const fallbackDate = new Date().toISOString().slice(0, 10);
+    // Summary format fallback: pull date + total from rows that contain both
     const dayMap = new Map<string, AggDay>();
     for (const row of rows) {
-      const vals = Object.values(row);
-      const dateVal = vals[0];
-      let dateKey = fallbackDate;
-      if (dateVal) {
-        const dt = typeof dateVal === 'number'
-          ? new Date((dateVal - 25569) * 86400 * 1000)
-          : new Date(String(dateVal));
-        if (!isNaN(dt.getTime())) dateKey = dt.toISOString().slice(0, 10);
+      const values = Object.values(row);
+      let rowDate: Date | null = null;
+      let rowCount = 0;
+
+      for (const value of values) {
+        if (!rowDate) {
+          rowDate = parseJoinedOnDate(value);
+        }
+
+        if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+          rowCount = Math.max(rowCount, Math.floor(value));
+        } else if (typeof value === 'string') {
+          const parsed = parseInt(value.replace(/[^0-9]/g, ''), 10);
+          if (!Number.isNaN(parsed) && parsed > 0) {
+            rowCount = Math.max(rowCount, parsed);
+          }
+        }
       }
-      const count = typeof vals[1] === 'number' ? vals[1] : parseInt(String(vals[1])) || 0;
+
+      if (!rowDate || rowCount <= 0) continue;
+
+      const dateKey = toDateKey(rowDate);
       if (!dayMap.has(dateKey)) {
         dayMap.set(dateKey, { date: dateKey, count: 0, byProvider: {}, byCountry: {}, byHour: {} });
       }
       const day = dayMap.get(dateKey)!;
-      day.count += count;
+      day.count += rowCount;
     }
+
     return Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
   }, []);
 
