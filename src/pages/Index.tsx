@@ -3,6 +3,7 @@ import { useState, useRef, useCallback } from 'react';
 import { parseExcelFile } from '@/lib/parseExcel';
 import type { DashboardData } from '@/lib/types';
 import { useDashboardHistory } from '@/hooks/useDashboardHistory';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import FileUpload from '@/components/FileUpload';
 import UploadHistoryPanel from '@/components/UploadHistoryPanel';
 import KPICard from '@/components/KPICard';
@@ -21,13 +22,12 @@ import PerformanceTrends from '@/components/PerformanceTrends';
 import ExecutiveOverview from '@/components/ExecutiveOverview';
 import KPIDetailModal from '@/components/KPIDetailModal';
 import SevenDaySummary from '@/components/SevenDaySummary';
+import CurrencyToggle from '@/components/CurrencyToggle';
 import { Activity, RefreshCw, CheckCircle2, AlertCircle, X, Loader2, Download } from 'lucide-react';
-
-const fmt = (v: number) => `€${Math.round(Math.abs(v)).toLocaleString()}`;
-const fmtSigned = (v: number) => `${v >= 0 ? '+' : '-'}€${Math.round(Math.abs(v)).toLocaleString()}`;
 
 const Index = () => {
   const { history, selectedId, setSelectedId, addEntry, deleteEntry, resetAll, activeData } = useDashboardHistory();
+  const { fmt, fmtSigned } = useCurrency();
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -35,7 +35,6 @@ const Index = () => {
   const [isExporting, setIsExporting] = useState(false);
   const dashboardRef = useRef<HTMLElement>(null);
 
-  // History always has at least the 2 default entries
   const data: DashboardData = activeData ?? history[0].data;
   const kpi = data.kpiSummary;
 
@@ -55,12 +54,11 @@ const Index = () => {
         windowWidth: 1600,
       });
 
-      const imgWidth = 297; // A4 landscape width in mm
+      const imgWidth = 297;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
-      // Add pages as needed
-      const pageHeight = 210; // A4 landscape height in mm
+      const pageHeight = 210;
       let position = 0;
       let remainingHeight = imgHeight;
       let page = 0;
@@ -71,7 +69,6 @@ const Index = () => {
         const sourceY = (position / imgHeight) * canvas.height;
         const sourceH = Math.min((pageHeight / imgHeight) * canvas.height, canvas.height - sourceY);
 
-        // Create a slice canvas for this page
         const pageCanvas = document.createElement('canvas');
         pageCanvas.width = canvas.width;
         pageCanvas.height = sourceH;
@@ -107,7 +104,6 @@ const Index = () => {
     setUploadSuccess(null);
     setIsLoading(true);
 
-    // Use setTimeout to let the loading spinner render
     setTimeout(() => {
       try {
         const parsed = parseExcelFile(buffer);
@@ -129,9 +125,6 @@ const Index = () => {
     setUploadSuccess(null);
   };
 
-
-
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -149,6 +142,7 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            <CurrencyToggle />
             <button
               onClick={handleDownloadPDF}
               disabled={isExporting}
@@ -210,10 +204,7 @@ const Index = () => {
       )}
 
       <main ref={dashboardRef} className="max-w-[1600px] mx-auto p-6 space-y-6">
-        {/* Executive Overview */}
         <ExecutiveOverview history={history} />
-
-        {/* Upload History Panel */}
         <UploadHistoryPanel
           history={history}
           selectedId={selectedId}
@@ -239,25 +230,13 @@ const Index = () => {
           <KPICard title="High Risk Users" value={kpi.highRiskUsers.toString()} icon="warning" trend={kpi.highRiskUsers > 0 ? 'down' : 'neutral'} onClick={() => setKpiModal('highRisk')} />
         </div>
 
-        {/* 7-Day Summary Banner */}
         <SevenDaySummary history={history} />
-
-        {/* Performance Trends */}
         <PerformanceTrends history={history} />
-
-        {/* Top Player Spotlight */}
         <TopPlayerSpotlightPanel player={data.topPlayer} />
-
-        {/* Audience & Engagement Insights */}
         <AudienceInsights history={history} />
-
-        {/* Post-Match Reports — moved below Audience Insights */}
         <PostMatchReports />
-
-        {/* IPL Match Tracker */}
         <IplMatchTracker />
 
-        {/* P&L + Bet Split row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <PnLChart history={history} selectedId={selectedId} onSelectDay={setSelectedId} />
@@ -265,16 +244,11 @@ const Index = () => {
           <BetSplitChart data={data.betSplit} />
         </div>
 
-        {/* Sports Breakdown */}
         <SportsTable data={data.sportsBreakdown} />
-
-        {/* Rejections + Users */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <RejectionsTable data={data.rejectionReasons} />
           <UserSummaryTable data={data.userSummaries} />
         </div>
-
-        {/* Market Patterns */}
         <MarketPatternChart data={data.marketPatterns} />
       </main>
 
