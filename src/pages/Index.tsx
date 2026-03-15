@@ -23,6 +23,7 @@ import ExecutiveOverview from '@/components/ExecutiveOverview';
 import KPIDetailModal from '@/components/KPIDetailModal';
 import SevenDaySummary from '@/components/SevenDaySummary';
 import CurrencyToggle from '@/components/CurrencyToggle';
+import ShareToSlack from '@/components/ShareToSlack';
 import { Activity, RefreshCw, CheckCircle2, AlertCircle, X, Loader2, Download } from 'lucide-react';
 
 const Index = () => {
