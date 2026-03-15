@@ -142,6 +142,15 @@ const Index = () => {
                   ? `Viewing: ${activeData.reportLabel}`
                   : selectedId === null ? `${history.length} days loaded` : 'Select a day'}
               </p>
+              <p className="text-[10px] text-muted-foreground/60">
+                {(() => {
+                  const uploaded = history.filter(h => !h.isDefault);
+                  if (uploaded.length === 0) return 'No data uploaded yet';
+                  const latest = uploaded.reduce((a, b) => a.uploadedAt > b.uploadedAt ? a : b);
+                  const d = new Date(latest.uploadedAt);
+                  return `Last updated: ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} at ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+                })()}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-4">
