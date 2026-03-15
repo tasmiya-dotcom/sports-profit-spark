@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { ChevronDown, Upload, Trophy, TrendingUp, TrendingDown, BarChart3, ShieldAlert, Clock } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface IplMatch {
   id: string;
@@ -16,9 +17,6 @@ interface IplMatch {
   unsettledBets: number;
   uploadedAt: string;
 }
-
-const fmt = (v: number) => `€${Math.round(Math.abs(v)).toLocaleString()}`;
-const fmtSigned = (v: number) => `${v >= 0 ? '+' : '-'}€${Math.round(Math.abs(v)).toLocaleString()}`;
 
 function parseIplCsv(text: string): Omit<IplMatch, 'id' | 'fileName' | 'uploadedAt'> {
   const lines = text.trim().split(/\r?\n/);
@@ -89,8 +87,8 @@ function parseIplCsv(text: string): Omit<IplMatch, 'id' | 'fileName' | 'uploaded
 const IplMatchTracker = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [matches, setMatches] = useState<IplMatch[]>([]);
+  const { fmt, fmtSigned } = useCurrency();
 
-  // Fetch from Supabase on mount
   useEffect(() => {
     const fetchMatches = async () => {
       const { data, error } = await supabase
@@ -123,7 +121,6 @@ const IplMatchTracker = () => {
       };
       setMatches(prev => [entry, ...prev]);
 
-      // Persist to Supabase
       supabase
         .from('ipl_tracker')
         .insert({ id: entry.id, uploaded_at: entry.uploadedAt, data: entry })

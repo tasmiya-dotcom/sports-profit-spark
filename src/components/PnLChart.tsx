@@ -1,5 +1,6 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from 'recharts';
 import type { HistoryEntry } from '@/hooks/useDashboardHistory';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface PnLChartProps {
   history: HistoryEntry[];
@@ -8,6 +9,8 @@ interface PnLChartProps {
 }
 
 const PnLChart = ({ history, selectedId, onSelectDay }: PnLChartProps) => {
+  const { convert, symbol } = useCurrency();
+
   const chartData = history
     .filter(entry => entry.data?.kpiSummary)
     .map(entry => ({
@@ -29,12 +32,12 @@ const PnLChart = ({ history, selectedId, onSelectDay }: PnLChartProps) => {
         <BarChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }} onClick={handleClick} style={{ cursor: 'pointer' }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 14% 18%)" />
           <XAxis dataKey="date" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} />
-          <YAxis tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`} />
+          <YAxis tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} tickFormatter={(v) => `${symbol}${(Math.abs(convert(v)) / 1000).toFixed(0)}k`} />
           <Tooltip
             contentStyle={{ backgroundColor: '#1e1e1e', border: '1px solid #00e554', borderRadius: '8px' }}
             labelStyle={{ color: '#ffffff' }}
             itemStyle={{ color: '#ffffff' }}
-            formatter={(value: number) => [`€${value.toLocaleString()}`, 'P&L']}
+            formatter={(value: number) => [`${symbol}${Math.round(Math.abs(convert(value))).toLocaleString()}`, 'P&L']}
             cursor={{ fill: 'hsl(220 14% 18% / 0.5)' }}
           />
           <ReferenceLine y={0} stroke="hsl(215 12% 52%)" strokeDasharray="3 3" />

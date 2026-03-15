@@ -1,5 +1,6 @@
 import type { HistoryEntry } from '@/hooks/useDashboardHistory';
 import { Calendar, Trash2, RotateCcw, Eye } from 'lucide-react';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface Props {
   history: HistoryEntry[];
@@ -9,9 +10,9 @@ interface Props {
   onResetAll: () => void;
 }
 
-const fmt = (v: number) => `€${Math.round(v).toLocaleString()}`;
-
 const UploadHistoryPanel = ({ history, selectedId, onSelect, onDelete, onResetAll }: Props) => {
+  const { fmt } = useCurrency();
+
   if (history.length === 0) return null;
 
   return (
@@ -31,7 +32,6 @@ const UploadHistoryPanel = ({ history, selectedId, onSelect, onDelete, onResetAl
         </button>
       </div>
 
-      {/* All Days row */}
       <button
         onClick={() => onSelect(null)}
         className={`w-full text-left px-3 py-2 rounded-lg mb-1 text-xs transition-all cursor-pointer ${
@@ -46,7 +46,6 @@ const UploadHistoryPanel = ({ history, selectedId, onSelect, onDelete, onResetAl
         </div>
       </button>
 
-      {/* Per-day rows */}
       <div className="space-y-1 max-h-64 overflow-y-auto">
         {history.map(entry => {
           const kpi = entry.data?.kpiSummary;

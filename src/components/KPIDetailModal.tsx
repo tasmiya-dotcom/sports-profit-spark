@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import type { DashboardData } from '@/lib/types';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 type KPIType = 'pnl' | 'turnover' | 'margin' | 'bets' | 'rejections' | 'highRisk';
 
@@ -11,6 +12,7 @@ interface KPIDetailModalProps {
 
 const KPIDetailModal = ({ type, data, onClose }: KPIDetailModalProps) => {
   const kpi = data.kpiSummary;
+  const { fmt, fmtSigned, convert, symbol } = useCurrency();
 
   const renderContent = () => {
     switch (type) {
@@ -31,9 +33,9 @@ const KPIDetailModal = ({ type, data, onClose }: KPIDetailModalProps) => {
                 {data.sportsBreakdown.map(s => (
                   <tr key={s.sport} className="border-b border-[#222]">
                     <td className="py-2 text-white">{s.sport}</td>
-                    <td className="py-2 text-right text-[#ccc]">€{s.turnover.toLocaleString()}</td>
+                    <td className="py-2 text-right text-[#ccc]">{fmt(s.turnover)}</td>
                     <td className={`py-2 text-right font-medium ${s.pnl >= 0 ? 'text-[#00e554]' : 'text-[#ff4444]'}`}>
-                      {s.pnl >= 0 ? '+' : ''}€{s.pnl.toLocaleString()}
+                      {fmtSigned(s.pnl)}
                     </td>
                   </tr>
                 ))}
@@ -41,9 +43,9 @@ const KPIDetailModal = ({ type, data, onClose }: KPIDetailModalProps) => {
               <tfoot>
                 <tr className="border-t border-[#444]">
                   <td className="py-2 text-white font-bold">Total</td>
-                  <td className="py-2 text-right text-white font-bold">€{kpi.turnover.toLocaleString()}</td>
+                  <td className="py-2 text-right text-white font-bold">{fmt(kpi.turnover)}</td>
                   <td className={`py-2 text-right font-bold ${kpi.pnl >= 0 ? 'text-[#00e554]' : 'text-[#ff4444]'}`}>
-                    {kpi.pnl >= 0 ? '+' : ''}€{kpi.pnl.toLocaleString()}
+                    {fmtSigned(kpi.pnl)}
                   </td>
                 </tr>
               </tfoot>
@@ -64,19 +66,19 @@ const KPIDetailModal = ({ type, data, onClose }: KPIDetailModalProps) => {
             <div className="space-y-3">
               <div className="flex justify-between items-center py-2 border-b border-[#222]">
                 <span className="text-white">Live Turnover</span>
-                <span className="text-[#00e554] font-mono font-medium">€{(split?.liveTurnover ?? 0).toLocaleString()} <span className="text-[#888] text-xs">({livePct.toFixed(1)}%)</span></span>
+                <span className="text-[#00e554] font-mono font-medium">{fmt(split?.liveTurnover ?? 0)} <span className="text-[#888] text-xs">({livePct.toFixed(1)}%)</span></span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-[#222]">
                 <span className="text-white">Pre-Match Turnover</span>
-                <span className="text-[#ccc] font-mono font-medium">€{(split?.prematchTurnover ?? 0).toLocaleString()} <span className="text-[#888] text-xs">({prePct.toFixed(1)}%)</span></span>
+                <span className="text-[#ccc] font-mono font-medium">{fmt(split?.prematchTurnover ?? 0)} <span className="text-[#888] text-xs">({prePct.toFixed(1)}%)</span></span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-[#222]">
                 <span className="text-white">Total Turnover</span>
-                <span className="text-white font-mono font-bold">€{kpi.turnover.toLocaleString()}</span>
+                <span className="text-white font-mono font-bold">{fmt(kpi.turnover)}</span>
               </div>
               <div className="flex justify-between items-center py-2">
                 <span className="text-white">Average Stake</span>
-                <span className="text-white font-mono font-medium">€{Math.round(avgStake).toLocaleString()}</span>
+                <span className="text-white font-mono font-medium">{fmt(avgStake)}</span>
               </div>
             </div>
           </>
@@ -100,7 +102,7 @@ const KPIDetailModal = ({ type, data, onClose }: KPIDetailModalProps) => {
                 {data.sportsBreakdown.map(s => (
                   <tr key={s.sport} className="border-b border-[#222]">
                     <td className="py-2 text-white">{s.sport}</td>
-                    <td className="py-2 text-right text-[#ccc]">€{s.turnover.toLocaleString()}</td>
+                    <td className="py-2 text-right text-[#ccc]">{fmt(s.turnover)}</td>
                     <td className={`py-2 text-right font-medium ${s.margin >= 0 ? 'text-[#00e554]' : 'text-[#ff4444]'}`}>
                       {s.margin.toFixed(2)}%
                     </td>
@@ -110,7 +112,7 @@ const KPIDetailModal = ({ type, data, onClose }: KPIDetailModalProps) => {
               <tfoot>
                 <tr className="border-t border-[#444]">
                   <td className="py-2 text-white font-bold">Overall</td>
-                  <td className="py-2 text-right text-white font-bold">€{kpi.turnover.toLocaleString()}</td>
+                  <td className="py-2 text-right text-white font-bold">{fmt(kpi.turnover)}</td>
                   <td className={`py-2 text-right font-bold ${kpi.margin >= 0 ? 'text-[#00e554]' : 'text-[#ff4444]'}`}>
                     {kpi.margin.toFixed(2)}%
                   </td>
@@ -181,7 +183,7 @@ const KPIDetailModal = ({ type, data, onClose }: KPIDetailModalProps) => {
                   <tr key={r.reason} className="border-b border-[#222]">
                     <td className="py-2 text-white">{r.reason}</td>
                     <td className="py-2 text-right text-[#ccc] font-mono">{r.count}</td>
-                    <td className="py-2 text-right text-[#ccc] font-mono">€{r.blockedTurnover.toLocaleString()}</td>
+                    <td className="py-2 text-right text-[#ccc] font-mono">{fmt(r.blockedTurnover)}</td>
                     <td className="py-2 text-right text-[#ccc] font-mono">{r.percentage.toFixed(1)}%</td>
                   </tr>
                 ))}
@@ -190,7 +192,7 @@ const KPIDetailModal = ({ type, data, onClose }: KPIDetailModalProps) => {
                 <tr className="border-t border-[#444]">
                   <td className="py-2 text-white font-bold">Total</td>
                   <td className="py-2 text-right text-white font-bold font-mono">{kpi.rejections}</td>
-                  <td className="py-2 text-right text-white font-bold font-mono">€{data.rejectionReasons.reduce((s, r) => s + r.blockedTurnover, 0).toLocaleString()}</td>
+                  <td className="py-2 text-right text-white font-bold font-mono">{fmt(data.rejectionReasons.reduce((s, r) => s + r.blockedTurnover, 0))}</td>
                   <td className="py-2 text-right text-white font-bold font-mono">100%</td>
                 </tr>
               </tfoot>
@@ -220,7 +222,6 @@ const KPIDetailModal = ({ type, data, onClose }: KPIDetailModalProps) => {
                   {highRiskUsers.map(u => {
                     const totalTO = data.kpiSummary.turnover;
                     const sharePct = totalTO > 0 ? (u.turnover / totalTO * 100) : 0;
-                    // Try to get CCF from top player if nickname matches
                     const ccf = data.topPlayer?.nickname === u.username ? data.topPlayer.ccf : null;
                     return (
                       <tr key={u.userId} className="border-b border-[#222]">
@@ -228,7 +229,7 @@ const KPIDetailModal = ({ type, data, onClose }: KPIDetailModalProps) => {
                           <span className="text-white font-medium">{u.username}</span>
                           <span className="text-[#666] text-xs ml-2">{u.userId}</span>
                         </td>
-                        <td className="py-2 text-right text-[#ccc] font-mono">€{u.turnover.toLocaleString()}</td>
+                        <td className="py-2 text-right text-[#ccc] font-mono">{fmt(u.turnover)}</td>
                         <td className="py-2 text-right text-[#ff4444] font-mono font-medium">{sharePct.toFixed(1)}%</td>
                         <td className="py-2 text-right text-[#ccc] font-mono">{ccf !== null ? ccf.toFixed(2) : '—'}</td>
                       </tr>

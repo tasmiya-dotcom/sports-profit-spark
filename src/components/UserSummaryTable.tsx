@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import type { UserSummary } from '@/lib/types';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface UserSummaryTableProps {
   data: UserSummary[];
@@ -8,6 +9,7 @@ interface UserSummaryTableProps {
 
 const UserSummaryTable = ({ data }: UserSummaryTableProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const { fmt, fmtSigned } = useCurrency();
 
   return (
     <div className="kpi-card !p-0 overflow-hidden">
@@ -40,9 +42,9 @@ const UserSummaryTable = ({ data }: UserSummaryTableProps) => {
                       </div>
                     </td>
                     <td>{row.bets.toLocaleString()}</td>
-                    <td>€{row.turnover.toLocaleString()}</td>
+                    <td>{fmt(row.turnover)}</td>
                     <td className={row.pnl >= 0 ? 'value-positive' : 'value-negative'}>
-                      {row.pnl >= 0 ? '+' : ''}€{Math.abs(row.pnl).toLocaleString()}
+                      {fmtSigned(row.pnl)}
                     </td>
                     <td className={row.margin >= 0 ? 'value-positive' : 'value-negative'}>
                       {row.margin.toFixed(1)}%

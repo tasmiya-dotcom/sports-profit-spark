@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import type { RejectionReason } from '@/lib/types';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface RejectionsTableProps {
   data: RejectionReason[];
@@ -8,6 +9,7 @@ interface RejectionsTableProps {
 
 const RejectionsTable = ({ data }: RejectionsTableProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const { fmt, fmtSigned } = useCurrency();
   const topReason = data.length > 0 ? data[0].reason : null;
 
   return (
@@ -37,9 +39,9 @@ const RejectionsTable = ({ data }: RejectionsTableProps) => {
                       {row.reason}
                     </td>
                     <td>{row.count.toLocaleString()}</td>
-                    <td className="value-warning">€{row.blockedTurnover.toLocaleString()}</td>
+                    <td className="value-warning">{fmt(row.blockedTurnover)}</td>
                     <td className={(row.potentialPnl ?? 0) >= 0 ? 'value-positive' : 'value-negative'}>
-                      {(row.potentialPnl ?? 0) >= 0 ? '+' : ''}€{(row.potentialPnl ?? 0).toLocaleString()}
+                      {fmtSigned(row.potentialPnl ?? 0)}
                     </td>
                     <td>{row.percentage.toFixed(2)}%</td>
                   </tr>
