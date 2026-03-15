@@ -23,6 +23,7 @@ import ExecutiveOverview from '@/components/ExecutiveOverview';
 import KPIDetailModal from '@/components/KPIDetailModal';
 import SevenDaySummary from '@/components/SevenDaySummary';
 import CurrencyToggle from '@/components/CurrencyToggle';
+import ShareToSlack from '@/components/ShareToSlack';
 import { Activity, RefreshCw, CheckCircle2, AlertCircle, X, Loader2, Download } from 'lucide-react';
 
 const Index = () => {
@@ -36,6 +37,8 @@ const Index = () => {
   const dashboardRef = useRef<HTMLElement>(null);
 
   const data: DashboardData = activeData ?? history[0].data;
+  // For Slack share: use selected day, or most recently uploaded day if "All Days"
+  const slackData: DashboardData = activeData ?? (history.length > 1 ? history[1].data : history[0].data);
   const kpi = data.kpiSummary;
 
   const handleDownloadPDF = useCallback(async () => {
@@ -143,6 +146,7 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-4">
             <CurrencyToggle />
+            <ShareToSlack data={slackData} />
             <button
               onClick={handleDownloadPDF}
               disabled={isExporting}
