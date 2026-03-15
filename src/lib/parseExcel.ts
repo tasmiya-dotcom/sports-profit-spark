@@ -442,7 +442,12 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
       }
     }
 
-    if (reason && reason.length > 1) {
+    // Filter out section headers, column headers, usernames, and non-reason entries
+    const rejectionJunkPatterns = /^(rejection reason|reason|sport|nickname|user|source|bets|turnover|stake|p&l|pnl|total|count|generated:|rejected bets|summary|overview|\d{4}-\d{2}-\d{2})/i;
+    const isLikelyHeader = reason.toUpperCase() === reason && reason.length > 15; // ALL-CAPS section headers
+    const isSingleWord = !reason.includes(' ') && reason.length < 20 && !/limit|exceed|restrict|block|suspend|error|fail|invalid|duplicate|cancel/i.test(reason);
+
+    if (reason && reason.length > 1 && !rejectionJunkPatterns.test(reason) && !isLikelyHeader && !isSingleWord) {
       const existing = rejectionMap.get(reason) || { count: 0, turnover: 0, pnl: 0 };
       existing.count++;
       existing.turnover += stake;
