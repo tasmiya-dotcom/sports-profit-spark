@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import type { HistoryEntry } from '@/hooks/useDashboardHistory';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface Props {
   history: HistoryEntry[];
@@ -77,6 +78,8 @@ const MiniTrend = ({ title, data, color, formatter }: {
 };
 
 const PerformanceTrends = ({ history }: Props) => {
+  const { fmt: fmtCurrency, convert, symbol } = useCurrency();
+
   const sorted = useMemo(() =>
     [...history]
       .filter(e => e.data?.kpiSummary)
@@ -95,15 +98,15 @@ const PerformanceTrends = ({ history }: Props) => {
 
   if (sorted.length < 2) return null;
 
-  const fmtEuro = (v: number) => `€${Math.round(Math.abs(v)).toLocaleString()}`;
+  const fmtMoney = (v: number) => `${symbol}${Math.round(Math.abs(convert(v))).toLocaleString()}`;
   const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
   return (
     <div className="space-y-3">
       <h2 className="text-sm font-bold tracking-wider uppercase text-muted-foreground">📈 Performance Trends</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <MiniTrend title="Daily P&L" data={pnlData} color="#00e554" formatter={fmtEuro} />
-        <MiniTrend title="Daily Turnover" data={turnoverData} color="#00e554" formatter={fmtEuro} />
+        <MiniTrend title="Daily P&L" data={pnlData} color="#00e554" formatter={fmtMoney} />
+        <MiniTrend title="Daily Turnover" data={turnoverData} color="#00e554" formatter={fmtMoney} />
         <MiniTrend title="Daily Bets" data={betsData} color="#00e554" />
         <MiniTrend title="Rejection Rate" data={rejectionData} color="#f59e0b" formatter={fmtPct} />
       </div>

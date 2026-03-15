@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { ChevronDown } from 'lucide-react';
 import type { SportBreakdown } from '@/lib/types';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface SportsTableProps {
   data: SportBreakdown[];
@@ -9,6 +10,7 @@ interface SportsTableProps {
 
 const SportsTable = ({ data }: SportsTableProps) => {
   const [isOpen, setIsOpen] = useState(true);
+  const { convert, symbol } = useCurrency();
 
   return (
     <div className="kpi-card !p-0 overflow-hidden">
@@ -25,13 +27,13 @@ const SportsTable = ({ data }: SportsTableProps) => {
               <ResponsiveContainer width="100%" height={Math.max(200, data.length * 36)}>
                 <BarChart data={data} layout="vertical" margin={{ left: 80, right: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 14% 18%)" />
-                  <XAxis type="number" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`} />
+                  <XAxis type="number" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} tickFormatter={(v) => `${symbol}${(Math.abs(convert(v)) / 1000).toFixed(0)}k`} />
                   <YAxis type="category" dataKey="sport" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} width={75} />
                   <Tooltip
                     contentStyle={{ backgroundColor: '#1e1e1e', border: '1px solid #00e554', borderRadius: '8px' }}
                     labelStyle={{ color: '#ffffff' }}
                     itemStyle={{ color: '#ffffff' }}
-                    formatter={(v: number) => [`€${v.toLocaleString()}`, 'Turnover']}
+                    formatter={(v: number) => [`${symbol}${Math.round(convert(v)).toLocaleString()}`, 'Turnover']}
                   />
                   <Bar dataKey="turnover" fill="#00e554" radius={[0, 4, 4, 0]} name="Turnover" />
                 </BarChart>
@@ -43,13 +45,13 @@ const SportsTable = ({ data }: SportsTableProps) => {
               <ResponsiveContainer width="100%" height={Math.max(200, data.length * 36)}>
                 <BarChart data={data} layout="vertical" margin={{ left: 80, right: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 14% 18%)" />
-                  <XAxis type="number" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`} />
+                  <XAxis type="number" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} tickFormatter={(v) => `${symbol}${(Math.abs(convert(v)) / 1000).toFixed(0)}k`} />
                   <YAxis type="category" dataKey="sport" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} width={75} />
                   <Tooltip
                     contentStyle={{ backgroundColor: '#1e1e1e', border: '1px solid #00e554', borderRadius: '8px' }}
                     labelStyle={{ color: '#ffffff' }}
                     itemStyle={{ color: '#ffffff' }}
-                    formatter={(v: number) => [`€${v.toLocaleString()}`, 'P&L']}
+                    formatter={(v: number) => [`${symbol}${Math.round(convert(v)).toLocaleString()}`, 'P&L']}
                   />
                   <Bar dataKey="pnl" radius={[0, 4, 4, 0]} name="P&L">
                     {data.map((entry, i) => (

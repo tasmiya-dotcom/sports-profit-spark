@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ChevronDown } from 'lucide-react';
 import type { MarketPattern } from '@/lib/types';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface MarketPatternChartProps {
   data: MarketPattern[];
@@ -9,6 +10,7 @@ interface MarketPatternChartProps {
 
 const MarketPatternChart = ({ data }: MarketPatternChartProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const { convert, symbol } = useCurrency();
 
   return (
     <div className="kpi-card !p-0 overflow-hidden">
@@ -37,9 +39,9 @@ const MarketPatternChart = ({ data }: MarketPatternChartProps) => {
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={data} layout="vertical" margin={{ left: 100 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 14% 18%)" />
-                  <XAxis type="number" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`} />
+                  <XAxis type="number" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} tickFormatter={(v) => `${symbol}${(Math.abs(convert(v)) / 1000).toFixed(0)}k`} />
                   <YAxis type="category" dataKey="market" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} width={95} />
-                  <Tooltip contentStyle={{ backgroundColor: '#1e1e1e', border: '1px solid #00e554', borderRadius: '8px' }} labelStyle={{ color: '#ffffff' }} itemStyle={{ color: '#ffffff' }} formatter={(v: number) => `€${v.toLocaleString()}`} />
+                  <Tooltip contentStyle={{ backgroundColor: '#1e1e1e', border: '1px solid #00e554', borderRadius: '8px' }} labelStyle={{ color: '#ffffff' }} itemStyle={{ color: '#ffffff' }} formatter={(v: number) => `${symbol}${Math.round(convert(v)).toLocaleString()}`} />
                   <Bar dataKey="turnover" fill="hsl(38 92% 55%)" radius={[0, 4, 4, 0]} name="Turnover" />
                 </BarChart>
               </ResponsiveContainer>

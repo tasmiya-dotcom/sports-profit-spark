@@ -1,13 +1,11 @@
 import { useState, useMemo } from 'react';
 import { ChevronDown, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import type { HistoryEntry } from '@/hooks/useDashboardHistory';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface Props {
   history: HistoryEntry[];
 }
-
-const fmt = (v: number) => `€${Math.round(Math.abs(v)).toLocaleString()}`;
-const fmtSigned = (v: number) => `${v >= 0 ? '+' : '-'}€${Math.round(Math.abs(v)).toLocaleString()}`;
 
 /* ── Performance Score (0-100) ── */
 function calcScore(history: HistoryEntry[]): number {
@@ -18,7 +16,6 @@ function calcScore(history: HistoryEntry[]): number {
   const last3 = sorted.slice(-3);
   const prev3 = sorted.slice(-6, -3);
 
-  // Margin trend (30pts) — improving margin = full points
   let marginPts = 15;
   if (last3.length >= 2 && prev3.length >= 1) {
     const recentMargin = last3.reduce((s, e) => s + e.data.kpiSummary.margin, 0) / last3.length;
@@ -29,17 +26,14 @@ function calcScore(history: HistoryEntry[]): number {
     marginPts = avgMargin >= 5 ? 30 : avgMargin >= 0 ? 20 : 5;
   }
 
-  // Rejection rate (20pts) — lower = better
   const totalBets = valid.reduce((s, e) => s + e.data.kpiSummary.bets, 0);
   const totalRej = valid.reduce((s, e) => s + e.data.kpiSummary.rejections, 0);
   const rejRate = (totalBets + totalRej) > 0 ? totalRej / (totalBets + totalRej) * 100 : 0;
   const rejPts = rejRate < 5 ? 20 : rejRate < 15 ? 14 : rejRate < 30 ? 8 : 2;
 
-  // High risk players (20pts)
   const maxHR = Math.max(...valid.map(e => e.data.kpiSummary.highRiskUsers));
   const hrPts = maxHR === 0 ? 20 : maxHR <= 2 ? 14 : maxHR <= 5 ? 8 : 2;
 
-  // Turnover growth (20pts)
   let toPts = 10;
   if (last3.length >= 2 && prev3.length >= 1) {
     const recentTO = last3.reduce((s, e) => s + e.data.kpiSummary.turnover, 0) / last3.length;
@@ -47,7 +41,6 @@ function calcScore(history: HistoryEntry[]): number {
     toPts = recentTO >= prevTO ? 20 : 6;
   }
 
-  // P&L direction (10pts)
   const totalPnl = valid.reduce((s, e) => s + e.data.kpiSummary.pnl, 0);
   const pnlPts = totalPnl > 0 ? 10 : totalPnl === 0 ? 5 : 2;
 
@@ -60,7 +53,6 @@ function getScoreColor(score: number): string {
   return '#ef4444';
 }
 
-/* ── Circular gauge SVG ── */
 const ScoreGauge = ({ score }: { score: number }) => {
   const color = getScoreColor(score);
   const radius = 54;
@@ -86,7 +78,6 @@ const ScoreGauge = ({ score }: { score: number }) => {
   );
 };
 
-/* ── IPL Countdown ── */
 const IplCountdown = () => {
   const iplDate = new Date('2026-03-28T00:00:00');
   const now = new Date();
@@ -116,7 +107,6 @@ const IplCountdown = () => {
   );
 };
 
-/* ── Trend arrow helper ── */
 const TrendArrow = ({ improving }: { improving: boolean | null }) => {
   if (improving === null) return <Minus className="w-3.5 h-3.5 text-muted-foreground" />;
   return improving
@@ -126,6 +116,7 @@ const TrendArrow = ({ improving }: { improving: boolean | null }) => {
 
 const ExecutiveOverview = ({ history }: Props) => {
   const [isOpen, setIsOpen] = useState(true);
+  const { fmt, fmtSigned } = useCurrency();
 
   const valid = useMemo(() => history.filter(e => e.data?.kpiSummary), [history]);
   const sorted = useMemo(() => [...valid].sort((a, b) => a.id.localeCompare(b.id)), [valid]);
@@ -133,7 +124,6 @@ const ExecutiveOverview = ({ history }: Props) => {
   const score = useMemo(() => calcScore(history), [history]);
   const dayCount = valid.length;
 
-  // ── Aggregate stats ──
   const totals = useMemo(() => {
     const t = { turnover: 0, pnl: 0, bets: 0, rejections: 0, highRisk: 0 };
     for (const e of valid) {
@@ -150,7 +140,6 @@ const ExecutiveOverview = ({ history }: Props) => {
   const overallMargin = totals.turnover > 0 ? (totals.pnl / totals.turnover) * 100 : 0;
   const rejRate = (totals.bets + totals.rejections) > 0 ? (totals.rejections / (totals.bets + totals.rejections)) * 100 : 0;
 
-  // ── Margin trend ──
   const marginTrend = useMemo(() => {
     const last3 = sorted.slice(-3);
     const prev3 = sorted.slice(-6, -3);
@@ -160,7 +149,6 @@ const ExecutiveOverview = ({ history }: Props) => {
     return r >= p;
   }, [sorted]);
 
-  // ── Sports aggregation ──
   const sportsAgg = useMemo(() => {
     const map = new Map<string, { bets: number; turnover: number; pnl: number }>();
     for (const e of valid) {
@@ -178,13 +166,11 @@ const ExecutiveOverview = ({ history }: Props) => {
   const bestSport = sportsAgg[0] ?? null;
   const worstSport = sportsAgg.length > 1 ? sportsAgg[sportsAgg.length - 1] : null;
 
-  // ── Biggest single day ──
   const biggestDay = useMemo(() => {
     if (valid.length === 0) return null;
     return valid.reduce((best, e) => e.data.kpiSummary.turnover > best.data.kpiSummary.turnover ? e : best);
   }, [valid]);
 
-  // ── Peak hour ──
   const peakHour = useMemo(() => {
     const hourMap = new Map<number, number>();
     let days = 0;
@@ -201,12 +187,10 @@ const ExecutiveOverview = ({ history }: Props) => {
     return { hour: maxH, avgBets: days > 0 ? Math.round(maxV / days) : 0 };
   }, [valid]);
 
-  // ── Top sport by bets (for "projected busiest") ──
   const topSportByBets = sportsAgg.length > 0
     ? [...sportsAgg].sort((a, b) => b.bets - a.bets)[0].sport
     : null;
 
-  // ── Cricket share ──
   const cricketShare = useMemo(() => {
     const totalBets = sportsAgg.reduce((s, sp) => s + sp.bets, 0);
     const cricket = sportsAgg.find(s => s.sport.toLowerCase().includes('cricket'));
@@ -214,9 +198,7 @@ const ExecutiveOverview = ({ history }: Props) => {
     return Math.round((cricket.bets / totalBets) * 100);
   }, [sportsAgg]);
 
-  // ── Watch list: sports with increasing rejection rate ──
   const watchList = useMemo(() => {
-    // Simplified: check if overall rejection rate is rising
     const last3 = sorted.slice(-3);
     const prev3 = sorted.slice(-6, -3);
     if (last3.length < 2 || prev3.length < 1) return null;
@@ -230,7 +212,6 @@ const ExecutiveOverview = ({ history }: Props) => {
     return null;
   }, [sorted]);
 
-  // ── Auto-generated summary ──
   const summary = useMemo(() => {
     const parts: string[] = [];
     if (cricketShare) parts.push(`Cricket leads volume at ${cricketShare}%`);
@@ -249,7 +230,6 @@ const ExecutiveOverview = ({ history }: Props) => {
       backgroundClip: 'padding-box',
       boxShadow: '0 0 0 1px hsl(145 100% 45% / 0.15), 0 4px 24px hsl(0 0% 0% / 0.4)',
     }}>
-      {/* Gradient top accent */}
       <div className="h-[2px]" style={{ background: 'linear-gradient(90deg, #00e554 0%, #00e554 40%, #f59e0b 100%)' }} />
 
       <button
@@ -269,8 +249,6 @@ const ExecutiveOverview = ({ history }: Props) => {
 
       {isOpen && (
         <div className="px-6 pb-6 space-y-5">
-
-          {/* ── Header: Score + Summary ── */}
           <div className="flex items-center gap-6">
             <ScoreGauge score={score} />
             <div className="flex-1 space-y-2">
@@ -285,7 +263,6 @@ const ExecutiveOverview = ({ history }: Props) => {
             <IplCountdown />
           </div>
 
-          {/* ── Stats Row ── */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {[
               { label: 'Total Turnover', value: fmt(totals.turnover), color: 'text-foreground' },
@@ -305,7 +282,6 @@ const ExecutiveOverview = ({ history }: Props) => {
             ))}
           </div>
 
-          {/* ── Bottom Row: Best/Worst/Biggest/Peak ── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {bestSport && (
               <div className="bg-card/60 border border-border rounded-lg px-3 py-2.5">
@@ -337,7 +313,6 @@ const ExecutiveOverview = ({ history }: Props) => {
             )}
           </div>
 
-          {/* ── Predictive Insights ── */}
           <div>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">🔮 Predictive Insights</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

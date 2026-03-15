@@ -3,6 +3,7 @@ import { ChevronDown, Upload, Trophy, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '@/lib/supabase';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface MarketPatternRow {
   market: string;
@@ -33,9 +34,6 @@ interface PostMatch {
   uploadedAt: string;
 }
 
-const fmt = (v: number) => `€${Math.round(Math.abs(v)).toLocaleString()}`;
-const fmtSigned = (v: number) => `${v >= 0 ? '+' : '-'}€${Math.round(Math.abs(v)).toLocaleString()}`;
-
 function num(v: any): number {
   if (v == null) return 0;
   if (typeof v === 'number') return v;
@@ -44,7 +42,6 @@ function num(v: any): number {
   return isNaN(n) ? 0 : n;
 }
 
-/** Deterministic ID from match name + date */
 function makeMatchId(matchName: string, date: string): string {
   const slug = `${matchName}-${date}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   return slug || `match-${Date.now()}`;
@@ -108,8 +105,8 @@ const PostMatchReports = () => {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const { fmt, fmtSigned, convert, symbol } = useCurrency();
 
-  // Fetch from Supabase on mount
   useEffect(() => {
     const fetchMatches = async () => {
       const { data, error } = await supabase
@@ -123,7 +120,6 @@ const PostMatchReports = () => {
       }
 
       if (data) {
-        // Deduplicate by id, keeping latest
         const byId = new Map<string, PostMatch>();
         for (const row of data) {
           const m = row.data as PostMatch;
@@ -145,13 +141,11 @@ const PostMatchReports = () => {
         const id = makeMatchId(parsed.matchName, parsed.date);
         const entry: PostMatch = { ...parsed, id, uploadedAt: new Date().toISOString() };
 
-        // Replace existing or add new (dedup by id)
         setMatches(prev => {
           const filtered = prev.filter(m => m.id !== entry.id);
           return [entry, ...filtered];
         });
 
-        // Upsert to Supabase (replace if same match)
         const { error: delErr } = await supabase.from('match_reports').delete().eq('id', id);
         if (delErr) console.error('Failed to delete old match report:', delErr);
 
@@ -224,8 +218,8 @@ const PostMatchReports = () => {
                     <BarChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="name" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} angle={-30} textAnchor="end" height={50} />
-                      <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} tickFormatter={v => `€${(v / 1000).toFixed(0)}k`} />
-                      <Tooltip contentStyle={{ backgroundColor: '#1e1e1e', border: '1px solid #00e554', borderRadius: '8px' }} labelStyle={{ color: '#ffffff' }} itemStyle={{ color: '#ffffff' }} formatter={(v: number) => [`€${v.toLocaleString()}`, 'Turnover']} />
+                      <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} tickFormatter={v => `${symbol}${(Math.abs(convert(v)) / 1000).toFixed(0)}k`} />
+                      <Tooltip contentStyle={{ backgroundColor: '#1e1e1e', border: '1px solid #00e554', borderRadius: '8px' }} labelStyle={{ color: '#ffffff' }} itemStyle={{ color: '#ffffff' }} formatter={(v: number) => [`${symbol}${Math.round(convert(v)).toLocaleString()}`, 'Turnover']} />
                       <Bar dataKey="turnover" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -258,7 +252,6 @@ const PostMatchReports = () => {
                             </div>
                           </div>
                         </button>
-                        {/* Delete button */}
                         <div className="pr-3 flex items-center">
                           {isConfirming ? (
                             <div className="flex items-center gap-1.5">

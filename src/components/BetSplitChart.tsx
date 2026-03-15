@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { ChevronDown } from 'lucide-react';
 import type { BetSplit } from '@/lib/types';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface BetSplitChartProps {
   data: BetSplit[];
@@ -9,6 +10,7 @@ interface BetSplitChartProps {
 
 const BetSplitChart = ({ data }: BetSplitChartProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const { convert, symbol } = useCurrency();
 
   if (!data.length) return null;
 
@@ -52,7 +54,7 @@ const BetSplitChart = ({ data }: BetSplitChartProps) => {
                   <Pie data={turnoverData} cx="50%" cy="50%" innerRadius={40} outerRadius={65} dataKey="value" strokeWidth={0}>
                     {turnoverData.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
                   </Pie>
-                  <Tooltip contentStyle={{ backgroundColor: '#1e1e1e', border: '1px solid #00e554', borderRadius: '8px' }} labelStyle={{ color: '#ffffff' }} itemStyle={{ color: '#ffffff' }} formatter={(v: number) => `€${v.toLocaleString()}`} />
+                  <Tooltip contentStyle={{ backgroundColor: '#1e1e1e', border: '1px solid #00e554', borderRadius: '8px' }} labelStyle={{ color: '#ffffff' }} itemStyle={{ color: '#ffffff' }} formatter={(v: number) => `${symbol}${Math.round(convert(v)).toLocaleString()}`} />
                 </PieChart>
               </ResponsiveContainer>
             </div>

@@ -1,13 +1,14 @@
 import type { TopPlayerSpotlight as TopPlayerData } from '@/lib/types';
 import { User, TrendingUp, BarChart3, Target } from 'lucide-react';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface TopPlayerSpotlightProps {
   player: TopPlayerData | null | undefined;
 }
 
-const fmt = (v: number) => `€${Math.round(Math.abs(v)).toLocaleString()}`;
-
 const TopPlayerSpotlightPanel = ({ player }: TopPlayerSpotlightProps) => {
+  const { fmt } = useCurrency();
+
   if (!player) {
     return (
       <div className="kpi-card">
@@ -44,7 +45,6 @@ const TopPlayerSpotlightPanel = ({ player }: TopPlayerSpotlightProps) => {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        {/* Nickname */}
         <div className="flex items-start gap-2">
           <User className={`w-4 h-4 mt-0.5 shrink-0 ${isHighRisk ? 'text-destructive' : 'text-primary'}`} />
           <div>
@@ -55,7 +55,6 @@ const TopPlayerSpotlightPanel = ({ player }: TopPlayerSpotlightProps) => {
           </div>
         </div>
 
-        {/* Bets */}
         <div className="flex items-start gap-2">
           <BarChart3 className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
           <div>
@@ -64,7 +63,6 @@ const TopPlayerSpotlightPanel = ({ player }: TopPlayerSpotlightProps) => {
           </div>
         </div>
 
-        {/* Turnover */}
         <div className="flex items-start gap-2">
           <TrendingUp className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
           <div>
@@ -73,7 +71,6 @@ const TopPlayerSpotlightPanel = ({ player }: TopPlayerSpotlightProps) => {
           </div>
         </div>
 
-        {/* Share */}
         <div className="flex items-start gap-2">
           <Target className={`w-4 h-4 mt-0.5 shrink-0 ${isHighRisk ? 'text-destructive' : 'text-amber-500'}`} />
           <div>
@@ -86,7 +83,6 @@ const TopPlayerSpotlightPanel = ({ player }: TopPlayerSpotlightProps) => {
           </div>
         </div>
 
-        {/* CCF */}
         <div className="flex items-start gap-2">
           <div className="w-4 h-4 mt-0.5 shrink-0 flex items-center justify-center text-muted-foreground text-xs font-bold">
             CCF

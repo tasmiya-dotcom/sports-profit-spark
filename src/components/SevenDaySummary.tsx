@@ -1,15 +1,15 @@
 import { useMemo } from 'react';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import type { HistoryEntry } from '@/hooks/useDashboardHistory';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface Props {
   history: HistoryEntry[];
 }
 
-const fmt = (v: number) => `€${Math.round(Math.abs(v)).toLocaleString()}`;
-const fmtSigned = (v: number) => `${v >= 0 ? '+' : '-'}€${Math.round(Math.abs(v)).toLocaleString()}`;
-
 const SevenDaySummary = ({ history }: Props) => {
+  const { fmt, fmtSigned } = useCurrency();
+
   const stats = useMemo(() => {
     if (history.length < 2) return null;
 
