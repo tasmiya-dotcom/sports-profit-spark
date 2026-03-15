@@ -37,6 +37,8 @@ const Index = () => {
   const dashboardRef = useRef<HTMLElement>(null);
 
   const data: DashboardData = activeData ?? history[0].data;
+  // For Slack share: use selected day, or most recently uploaded day if "All Days"
+  const slackData: DashboardData = activeData ?? (history.length > 1 ? history[1].data : history[0].data);
   const kpi = data.kpiSummary;
 
   const handleDownloadPDF = useCallback(async () => {
