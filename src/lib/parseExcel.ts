@@ -475,10 +475,41 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
         turnover: Math.round(data.turnover),
         pnl: Math.round(data.pnl),
         margin: data.turnover > 0 ? (data.pnl / data.turnover) * 100 : 0,
-        concentrationRisk: (concPct > 50 ? 'high' : concPct > 20 ? 'medium' : 'low') as 'high' | 'medium' | 'low',
+        concentrationRisk: 'low',
+        turnoverSharePct: concPct,
       });
     }
   }
+
+  // Enrich users with CCF from Raw Data and calculate risk badges
+  const totalDayTurnover = kpiSummary.turnover || userSummaries.reduce((s, u) => s + u.turnover, 0);
+  for (const user of userSummaries) {
+    // Find max CCF for this user from raw data
+    let maxCcf: number | null = null;
+    for (const row of rawRows) {
+      const nickname = str(row['Nickname']);
+      const sourceId = str(row['Source ID'] || row['SourceID'] || row['Source']);
+      if (nickname === user.username || sourceId === user.userId || nickname === user.userId) {
+        const ccfVal = num(row['CCF'] || row['Customer Factor'] || row['CustomerFactor']);
+        if (ccfVal !== 0 && (maxCcf === null || ccfVal > maxCcf)) {
+          maxCcf = ccfVal;
+        }
+      }
+    }
+    user.ccf = maxCcf;
+    const sharePct = user.turnoverSharePct ?? (totalDayTurnover > 0 ? (user.turnover / totalDayTurnover) * 100 : 0);
+    user.turnoverSharePct = sharePct;
+
+    // Risk: HIGH if CCF > 3.0 or turnover share > 50%, MEDIUM if CCF > 1.5, else LOW
+    if ((maxCcf !== null && maxCcf > 3.0) || sharePct > 50) {
+      user.concentrationRisk = 'high';
+    } else if (maxCcf !== null && maxCcf > 1.5) {
+      user.concentrationRisk = 'medium';
+    } else {
+      user.concentrationRisk = 'low';
+    }
+  }
+
   userSummaries.sort((a, b) => b.turnover - a.turnover);
 
   // If no high risk users found in Report, count from raw data
