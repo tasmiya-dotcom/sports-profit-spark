@@ -36,7 +36,7 @@ const RejectionsTable = ({ data }: RejectionsTableProps) => {
                 </tr>
               </thead>
               <tbody>
-                {data.map((row) => (
+                {filtered.map((row) => (
                   <tr key={row.reason} className={row.reason === topReason ? 'bg-destructive/10' : ''}>
                     <td className={`font-sans font-medium ${row.reason === topReason ? 'text-destructive' : ''}`}>
                       {row.reason}
