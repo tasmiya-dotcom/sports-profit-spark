@@ -85,8 +85,8 @@ function isValidRejectionReason(reason: string): boolean {
 function buildSlackMessage(d: DashboardData): string {
   const kpi = d.kpiSummary;
   const date = d.reportLabel;
-  const fmt = (v: number) => `€${Math.round(Math.abs(v)).toLocaleString()}`;
-  const fmtSigned = (v: number) => `${v >= 0 ? '' : '-'}€${Math.round(Math.abs(v)).toLocaleString()}`;
+  const fmt = (v: number) => { const safe = isNaN(v) ? 0 : v; return `€${Math.round(Math.abs(safe)).toLocaleString()}`; };
+  const fmtSigned = (v: number) => { const safe = isNaN(v) ? 0 : v; return `${safe >= 0 ? '' : '-'}€${Math.round(Math.abs(safe)).toLocaleString()}`; };
 
   const totalLiveTo = d.betSplit.reduce((s, b) => s + b.liveTurnover, 0);
   const totalPreTo = d.betSplit.reduce((s, b) => s + b.prematchTurnover, 0);
