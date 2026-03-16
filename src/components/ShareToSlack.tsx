@@ -139,8 +139,9 @@ function buildSlackMessage(d: DashboardData): string {
   if (users.length > 0) {
     lines.push('*Real User Activity*');
     for (const u of users) {
-      const nick = u.username && u.username !== u.userId ? ` (${u.username})` : '';
-      lines.push(`• ${u.userId}${nick}, bets: ${u.bets.toLocaleString()}, turnover: ${fmt(u.turnover)}`);
+      const hasNick = u.username && u.username !== u.userId && u.username !== '—' && u.username !== '-' && u.username.trim() !== '';
+      const userLabel = hasNick ? `${u.username} (${u.userId.slice(0, 8)}...)` : u.userId;
+      lines.push(`• ${userLabel}, bets: ${u.bets.toLocaleString()}, turnover: ${fmt(u.turnover)}`);
     }
     lines.push('');
   }
