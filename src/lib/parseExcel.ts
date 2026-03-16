@@ -271,7 +271,9 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
   const kpiTurnover = findReportValue(reportGrid, 'accepted turnover') || findReportValue(reportGrid, 'turnover');
   const kpiBets = findReportValue(reportGrid, 'accepted bets') || findReportValue(reportGrid, 'total bets') || findReportValue(reportGrid, 'bets');
   const kpiMargin = findReportValue(reportGrid, 'margin');
-  const kpiRejections = findReportValue(reportGrid, 'risk & controls') || findReportValue(reportGrid, 'rejected') || findReportValue(reportGrid, 'rejection');
+  const kpiRejections = findReportValue(reportGrid, 'risk & controls') || findReportValue(reportGrid, 'rejected bets') || findReportValue(reportGrid, 'rejected') || findReportValue(reportGrid, 'rejection');
+  const kpiRejectedTurnover = findReportValue(reportGrid, 'rejected turnover') || findReportValue(reportGrid, 'rejected stake');
+  const kpiPotentialPnl = findReportValue(reportGrid, 'potential p&l') || findReportValue(reportGrid, 'potential pnl') || findReportValue(reportGrid, 'lost p&l');
   const kpiHighRiskUsers = countHighRiskUsersFromReport(reportGrid);
 
   const topPlayerFromReport = extractTopPlayerFromReport(reportGrid);
@@ -283,6 +285,8 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
     margin: Math.abs(kpiMargin) > 0 && Math.abs(kpiMargin) < 1 ? kpiMargin * 100 : kpiMargin,
     rejections: Math.round(kpiRejections),
     highRiskUsers: kpiHighRiskUsers,
+    rejectedTurnover: Math.round(kpiRejectedTurnover),
+    potentialPnl: Math.round(kpiPotentialPnl),
   };
 
   console.log('KPI Summary:', kpiSummary);

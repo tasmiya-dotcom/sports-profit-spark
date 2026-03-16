@@ -125,7 +125,7 @@ function buildSlackMessage(d: DashboardData): string {
   }
 
   lines.push('*Risk & Controls*');
-  lines.push(`Rejected Bets: ${rejBets.toLocaleString()} | Rejected Turnover: ${rejTurnoverDisplay}`);
+  lines.push(`Rejected Bets: ${rejBets.toLocaleString()} | Rejected Turnover: ${fmt(rejTurnover)} | Potential P&L: ${fmtSigned(rejPotentialPnl)}`);
   lines.push('');
 
   if (validRejections.length > 0) {
