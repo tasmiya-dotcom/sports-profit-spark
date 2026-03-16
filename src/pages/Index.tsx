@@ -144,7 +144,7 @@ const Index = () => {
               </p>
               <p className="text-[10px] text-muted-foreground/60">
                 {(() => {
-                  const uploaded = history.filter(h => !h.isDefault);
+                  const uploaded = history;
                   if (uploaded.length === 0) return 'No data uploaded yet';
                   const latest = uploaded.reduce((a, b) => a.uploadedAt > b.uploadedAt ? a : b);
                   const d = new Date(latest.uploadedAt);
