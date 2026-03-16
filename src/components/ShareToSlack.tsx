@@ -92,13 +92,12 @@ function buildSlackMessage(d: DashboardData): string {
   const totalPreTo = d.betSplit.reduce((s, b) => s + b.prematchTurnover, 0);
   const avgStake = kpi.bets > 0 ? kpi.turnover / kpi.bets : 0;
   const validRejections = d.rejectionReasons.filter(r => r.count > 0 && isValidRejectionReason(r.reason));
+  // Prefer Report sheet KPI values (from RISK & CONTROLS — TOTALS) for turnover and P&L
+  // Only use filtered rejection detail sums as fallback
   const filteredRejBets = validRejections.reduce((s, r) => s + r.count, 0);
-  const filteredRejTurnover = validRejections.reduce((s, r) => s + r.blockedTurnover, 0);
-  const filteredRejPnl = validRejections.reduce((s, r) => s + r.potentialPnl, 0);
-  // Use filtered counts; fall back to KPI values only if no rejection detail rows exist at all
-  const rejBets = d.rejectionReasons.length > 0 ? filteredRejBets : (kpi.rejections || 0);
-  const rejTurnover = d.rejectionReasons.length > 0 ? filteredRejTurnover : (kpi.rejectedTurnover || 0);
-  const rejPotentialPnl = d.rejectionReasons.length > 0 ? filteredRejPnl : (kpi.potentialPnl || 0);
+  const rejBets = kpi.rejections || filteredRejBets;
+  const rejTurnover = kpi.rejectedTurnover || validRejections.reduce((s, r) => s + r.blockedTurnover, 0);
+  const rejPotentialPnl = kpi.potentialPnl || validRejections.reduce((s, r) => s + r.potentialPnl, 0);
 
   const sports = [...d.sportsBreakdown].filter(s => s.bets > 0 || s.turnover > 0).sort((a, b) => b.turnover - a.turnover);
   const users = [...d.userSummaries]
