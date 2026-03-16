@@ -92,9 +92,9 @@ function buildSlackMessage(d: DashboardData): string {
   const totalPreTo = d.betSplit.reduce((s, b) => s + b.prematchTurnover, 0);
   const avgStake = kpi.bets > 0 ? kpi.turnover / kpi.bets : 0;
   const validRejections = d.rejectionReasons.filter(r => r.count > 0 && isValidRejectionReason(r.reason));
-  const rejBets = validRejections.reduce((s, r) => s + r.count, 0);
-  const rejTurnover = validRejections.reduce((s, r) => s + r.blockedTurnover, 0);
-  const rejTurnoverDisplay = rejTurnover === 0 && rejBets > 0 ? 'N/A' : fmt(rejTurnover);
+  const rejBets = kpi.rejections || validRejections.reduce((s, r) => s + r.count, 0);
+  const rejTurnover = kpi.rejectedTurnover || validRejections.reduce((s, r) => s + r.blockedTurnover, 0);
+  const rejPotentialPnl = kpi.potentialPnl;
 
   const sports = [...d.sportsBreakdown].filter(s => s.bets > 0 || s.turnover > 0).sort((a, b) => b.turnover - a.turnover);
   const users = [...d.userSummaries]
