@@ -326,22 +326,27 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
   const kpiTurnover = findReportValue(reportGrid, 'accepted turnover') || findReportValue(reportGrid, 'turnover');
   const kpiBets = findReportValue(reportGrid, 'accepted bets') || findReportValue(reportGrid, 'total bets') || findReportValue(reportGrid, 'bets');
   const kpiMargin = findReportValue(reportGrid, 'margin');
-  const kpiRejections = findReportValue(reportGrid, 'risk & controls') || findReportValue(reportGrid, 'rejected bets') || findReportValue(reportGrid, 'rejected') || findReportValue(reportGrid, 'rejection');
-  const kpiRejectedTurnover = findReportValue(reportGrid, 'rejected turnover') || findReportValue(reportGrid, 'rejected stake');
-  const kpiPotentialPnl = findReportValue(reportGrid, 'potential p&l') || findReportValue(reportGrid, 'potential pnl') || findReportValue(reportGrid, 'lost p&l');
   const kpiHighRiskUsers = countHighRiskUsersFromReport(reportGrid);
+
+  // Read rejection values from RISK & CONTROLS section specifically
+  const riskControls = findRiskControlsValues(reportGrid);
+  const kpiRejections = riskControls.rejectedBets || findReportValue(reportGrid, 'risk & controls') || findReportValue(reportGrid, 'rejected bets') || findReportValue(reportGrid, 'rejected');
+  const kpiRejectedTurnover = riskControls.rejectedTurnover || findReportValue(reportGrid, 'rejected turnover') || findReportValue(reportGrid, 'rejected stake');
+  const kpiPotentialPnl = riskControls.potentialPnl || findReportValue(reportGrid, 'potential p&l') || findReportValue(reportGrid, 'potential pnl') || findReportValue(reportGrid, 'lost p&l');
 
   const topPlayerFromReport = extractTopPlayerFromReport(reportGrid);
 
+  const safeRound = (v: number) => isNaN(v) ? 0 : Math.round(v);
+
   const kpiSummary: KPISummary = {
-    pnl: Math.round(kpiPnl),
-    turnover: Math.round(kpiTurnover),
-    bets: Math.round(kpiBets),
+    pnl: safeRound(kpiPnl),
+    turnover: safeRound(kpiTurnover),
+    bets: safeRound(kpiBets),
     margin: Math.abs(kpiMargin) > 0 && Math.abs(kpiMargin) < 1 ? kpiMargin * 100 : kpiMargin,
-    rejections: Math.round(kpiRejections),
+    rejections: safeRound(kpiRejections),
     highRiskUsers: kpiHighRiskUsers,
-    rejectedTurnover: Math.round(kpiRejectedTurnover),
-    potentialPnl: Math.round(kpiPotentialPnl),
+    rejectedTurnover: safeRound(kpiRejectedTurnover),
+    potentialPnl: safeRound(kpiPotentialPnl),
   };
 
   console.log('KPI Summary:', kpiSummary);
