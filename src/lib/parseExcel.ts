@@ -303,7 +303,7 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
     const isLive = preMatchOrLive === 'L';
 
     const stake = num(row['Stake']) || num(row['Unit Stake (EUR)']) || num(row['Total Stake (EUR)']);
-    const pnl = num(row['Pnl']) || num(row['P&L']) || num(row['Distributed P&L']);
+    const pnl = num(row['Distributed P&L']) || num(row['P&L']) || num(row['Pnl']);
     const sport = str(row['Sport']);
     const nickname = str(row['Nickname']);
     const market = str(row['Market'] || row['Market Group'] || row['Mg'] || '');
