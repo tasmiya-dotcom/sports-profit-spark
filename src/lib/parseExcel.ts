@@ -533,7 +533,56 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
   // === REJECTION DETAIL ===
   const rejectionRows = getRows(workbook, 'Rejection Detail');
   const rejectionMap = new Map<string, { count: number; turnover: number; pnl: number }>();
+
+  // Helper: extract ISO date string from a row's date/time column
+  const extractRowDate = (row: Record<string, any>): string | null => {
+    for (const k of Object.keys(row)) {
+      const kl = k.toLowerCase();
+      if (!(kl.includes('date') || kl.includes('time') || kl === 'dt' || kl === 'timestamp')) continue;
+      const v = row[k];
+      if (typeof v === 'number' && v > 40000 && v < 60000) {
+        // Excel serial date
+        const parsed = XLSX.SSF.parse_date_code(v);
+        if (parsed) {
+          const d = new Date(parsed.y, parsed.m - 1, parsed.d);
+          return d.toISOString().split('T')[0];
+        }
+      }
+      const s = String(v || '');
+      // Try ISO: 2026-03-15
+      const isoMatch = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+      if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+      // Try DD/MM/YYYY
+      const slashMatch = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if (slashMatch) {
+        const d = new Date(`${slashMatch[2]}/${slashMatch[1]}/${slashMatch[3]}`);
+        if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+      }
+      // Try "15 Mar 2026"
+      const dmy = s.match(/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{4})/i);
+      if (dmy) {
+        const d = new Date(`${dmy[2]} ${dmy[1]}, ${dmy[3]}`);
+        if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+      }
+    }
+    return null;
+  };
+
+  // Check if any rejection rows have date info for filtering
+  let hasDateColumn = false;
+  if (rejectionRows.length > 0) {
+    const sampleDate = extractRowDate(rejectionRows[0]);
+    hasDateColumn = sampleDate !== null;
+  }
+  console.log('Rejection Detail: rows =', rejectionRows.length, ', hasDateColumn =', hasDateColumn, ', reportDate =', reportDate);
+
   for (const row of rejectionRows) {
+    // Filter by report date if date column exists
+    if (hasDateColumn) {
+      const rowDate = extractRowDate(row);
+      if (rowDate && rowDate !== reportDate) continue;
+    }
+
     const keys = Object.keys(row).filter(k => !k.startsWith('__'));
     let reason = '';
     let stake = 0;
