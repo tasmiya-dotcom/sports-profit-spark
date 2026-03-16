@@ -613,17 +613,37 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
   if (topPlayerFromReport) {
     // Find the maximum CCF from Raw Data for this player
     let maxCcf: number | null = null;
-    const playerKey = topPlayerFromReport.nickname !== '—' ? topPlayerFromReport.nickname : topPlayerFromReport.sourceId;
+    const playerNick = topPlayerFromReport.nickname !== '—' ? topPlayerFromReport.nickname.toLowerCase() : '';
+    const playerSrc = topPlayerFromReport.sourceId.toLowerCase();
+    
+    // Log column headers to debug CCF column name
+    if (rawRows.length > 0) {
+      const cols = Object.keys(rawRows[0]);
+      console.log('Raw Data columns:', cols);
+      const ccfCols = cols.filter(c => c.toLowerCase().includes('ccf') || c.toLowerCase().includes('customer') || c.toLowerCase().includes('factor'));
+      console.log('CCF-related columns:', ccfCols);
+    }
+
     for (const row of rawRows) {
-      const nickname = str(row['Nickname']);
-      const sourceId = str(row['Source ID'] || row['SourceID'] || row['Source']);
-      if (nickname === playerKey || sourceId === playerKey || sourceId === topPlayerFromReport.sourceId) {
-        const ccfVal = num(row['CCF'] || row['Customer Factor'] || row['CustomerFactor']);
+      const nickname = str(row['Nickname']).toLowerCase();
+      const sourceId = (str(row['Source ID']) || str(row['SourceID']) || str(row['Source']) || str(row['Source Id']) || str(row['source_id'])).toLowerCase();
+      
+      if ((playerNick && nickname === playerNick) || (playerSrc && (sourceId === playerSrc || nickname === playerSrc))) {
+        // Try all possible CCF column names
+        let ccfVal = 0;
+        for (const key of Object.keys(row)) {
+          const kl = key.toLowerCase();
+          if (kl === 'ccf' || kl.includes('customer factor') || kl.includes('customerfactor') || kl === 'cf') {
+            ccfVal = num(row[key]);
+            if (ccfVal !== 0) break;
+          }
+        }
         if (ccfVal !== 0 && (maxCcf === null || ccfVal > maxCcf)) {
           maxCcf = ccfVal;
         }
       }
     }
+    console.log('Top player CCF lookup:', { playerNick, playerSrc, maxCcf });
     topPlayer = { ...topPlayerFromReport, ccf: maxCcf };
   }
 
