@@ -120,47 +120,60 @@ function findReportValue(grid: any[][], label: string): number {
 
 /**
  * Find values from the RISK & CONTROLS section in the Report sheet.
+ * Looks for a "Total Rejected" row with Bets in col C, Turnover in col D, Potential P&L in col E.
  */
 function findRiskControlsValues(grid: any[][]): { rejectedTurnover: number; potentialPnl: number; rejectedBets: number } {
   let inRiskSection = false;
   const result = { rejectedTurnover: 0, potentialPnl: 0, rejectedBets: 0 };
 
   for (let r = 0; r < grid.length; r++) {
-    const cell0 = str(grid[r]?.[0]).toLowerCase();
-    
-    if (cell0.includes('risk') && (cell0.includes('control') || cell0.includes('total'))) {
+    const row = grid[r];
+    if (!row) continue;
+    const cell0 = str(row[0]).toLowerCase();
+    const cell1 = str(row[1]).toLowerCase();
+    const combined = `${cell0} ${cell1}`;
+
+    // Detect RISK & CONTROLS section header
+    if (combined.includes('risk') && (combined.includes('control') || combined.includes('total'))) {
       inRiskSection = true;
-      for (let c = 1; c < (grid[r]?.length || 0); c++) {
-        const v = num(grid[r][c]);
-        if (v !== 0) { if (result.rejectedBets === 0) result.rejectedBets = Math.round(v); break; }
-      }
       continue;
     }
 
+    // Stop at next major section
+    if (inRiskSection && cell0 && (cell0.includes('per user') || cell0.includes('user summary') || cell0.includes('market pattern') || cell0.includes('sport breakdown'))) break;
+
     if (inRiskSection) {
-      if (cell0 && (cell0.includes('per user') || cell0.includes('user summary') || cell0.includes('market pattern') || cell0.includes('sport'))) break;
-      
-      for (let c = 0; c < (grid[r]?.length || 0); c++) {
-        const cellText = str(grid[r][c]).toLowerCase();
-        
-        if (cellText.includes('rejected') && (cellText.includes('turnover') || cellText.includes('stake'))) {
-          for (let vc = c + 1; vc < (grid[r]?.length || 0); vc++) {
-            const v = num(grid[r][vc]);
-            if (v !== 0 || str(grid[r][vc]).trim() === '0') { result.rejectedTurnover = v; break; }
+      // Match "Total Rejected" row — values in columns C(2), D(3), E(4)
+      if (combined.includes('total') && combined.includes('reject')) {
+        result.rejectedBets = Math.round(num(row[2]));
+        result.rejectedTurnover = num(row[3]);
+        result.potentialPnl = num(row[4]);
+        console.log('Found "Total Rejected" row:', { row: row.slice(0, 6), result });
+        break;
+      }
+
+      // Also try matching individual labeled cells within the section
+      for (let c = 0; c < (row.length || 0); c++) {
+        const cellText = str(row[c]).toLowerCase();
+
+        if (cellText.includes('rejected') && (cellText.includes('turnover') || cellText.includes('stake')) && result.rejectedTurnover === 0) {
+          for (let vc = c + 1; vc < row.length; vc++) {
+            const v = num(row[vc]);
+            if (v !== 0 || str(row[vc]).trim() === '0') { result.rejectedTurnover = v; break; }
           }
         }
-        
-        if ((cellText.includes('potential') || cellText.includes('lost')) && (cellText.includes('p&l') || cellText.includes('pnl'))) {
-          for (let vc = c + 1; vc < (grid[r]?.length || 0); vc++) {
-            const v = num(grid[r][vc]);
-            if (v !== 0 || str(grid[r][vc]).trim() === '0') { result.potentialPnl = v; break; }
+
+        if ((cellText.includes('potential') || cellText.includes('lost')) && (cellText.includes('p&l') || cellText.includes('pnl')) && result.potentialPnl === 0) {
+          for (let vc = c + 1; vc < row.length; vc++) {
+            const v = num(row[vc]);
+            if (v !== 0 || str(row[vc]).trim() === '0') { result.potentialPnl = v; break; }
           }
         }
-        
-        if (cellText.includes('rejected') && cellText.includes('bet')) {
-          for (let vc = c + 1; vc < (grid[r]?.length || 0); vc++) {
-            const v = num(grid[r][vc]);
-            if (v !== 0 || str(grid[r][vc]).trim() === '0') { result.rejectedBets = Math.round(v); break; }
+
+        if (cellText.includes('rejected') && cellText.includes('bet') && result.rejectedBets === 0) {
+          for (let vc = c + 1; vc < row.length; vc++) {
+            const v = num(row[vc]);
+            if (v !== 0 || str(row[vc]).trim() === '0') { result.rejectedBets = Math.round(v); break; }
           }
         }
       }
