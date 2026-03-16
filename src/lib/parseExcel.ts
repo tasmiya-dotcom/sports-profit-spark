@@ -302,8 +302,10 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
     const preMatchOrLive = str(row['Pre-Match or Live']).toUpperCase();
     const isLive = preMatchOrLive === 'L';
 
-    const stake = num(row['Stake']) || num(row['Unit Stake (EUR)']) || num(row['Total Stake (EUR)']);
-    const pnl = num(row['Distributed P&L']) || num(row['P&L']) || num(row['Pnl']);
+    const stakeRaw = num(row['Stake']);
+    const stake = stakeRaw !== 0 ? stakeRaw : (num(row['Unit Stake (EUR)']) || num(row['Total Stake (EUR)']));
+    const pnlRaw = num(row['Distributed P&L']);
+    const pnl = pnlRaw !== 0 ? pnlRaw : (num(row['P&L']) || num(row['Pnl']));
     const sport = str(row['Sport']);
     const nickname = str(row['Nickname']);
     const market = str(row['Market'] || row['Market Group'] || row['Mg'] || '');
