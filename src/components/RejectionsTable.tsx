@@ -7,10 +7,13 @@ interface RejectionsTableProps {
   data: RejectionReason[];
 }
 
+const INTERNAL_TEST_PATTERN = /test|arsen|internal|dummy/i;
+
 const RejectionsTable = ({ data }: RejectionsTableProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const { fmt, fmtSigned } = useCurrency();
-  const topReason = data.length > 0 ? data[0].reason : null;
+  const filtered = data.filter(r => !INTERNAL_TEST_PATTERN.test(r.reason));
+  const topReason = filtered.length > 0 ? filtered[0].reason : null;
 
   return (
     <div className="kpi-card !p-0 overflow-hidden">
