@@ -101,7 +101,7 @@ function buildSlackMessage(d: DashboardData): string {
     .filter(u => !isTestUser(u.userId, u.username) && !isFooterRow(u.userId, u.username))
     .sort((a, b) => b.turnover - a.turnover);
   
-  const marketLines = d.marketPatterns.filter(m => m.count > 0).sort((a, b) => b.count - a.count).slice(0, 10);
+  const marketLines = d.marketPatterns.filter(m => m.count > 0).sort((a, b) => b.count - a.count).slice(0, 5);
 
   const lines: string[] = [];
   lines.push(`📊 *Sportsbook Performance Report: ${date} (00:00 - 23:59)*`);
@@ -147,9 +147,9 @@ function buildSlackMessage(d: DashboardData): string {
   }
 
   if (marketLines.length > 0) {
-    lines.push('*Market Pattern*');
+    lines.push(`*Market Pattern (Top ${marketLines.length})*`);
     for (const m of marketLines) {
-      lines.push(`• ${formatMarketEntry(m.market, m.count)}`);
+      lines.push(`• ${m.market}: ${m.count.toLocaleString()} bets`);
     }
     lines.push('');
   }
