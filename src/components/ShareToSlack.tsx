@@ -75,9 +75,10 @@ function isValidRejectionReason(reason: string): boolean {
   // Reject section headers, column labels, usernames, and junk
   const junkPatterns = /^(rejection reason|reason|sport|nickname|user|source|bets|turnover|stake|p&l|pnl|total|count|generated|rejected bets|summary|overview|risk)/i;
   if (junkPatterns.test(lower)) return false;
-  if (reason.toUpperCase() === reason && reason.length > 15) return false; // ALL-CAPS section headers
-  // Single short word that doesn't look like a reason
+  if (reason.toUpperCase() === reason && reason.length > 15) return false;
   if (!reason.includes(' ') && reason.length < 15 && !/limit|exceed|restrict|block|suspend|error|fail|invalid|duplicate|cancel|ccf|odds|price|delay/i.test(reason)) return false;
+  // Exclude internal test rejections
+  if (/test|arsen|internal|dummy/i.test(lower)) return false;
   return true;
 }
 
