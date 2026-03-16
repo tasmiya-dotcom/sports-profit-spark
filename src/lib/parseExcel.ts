@@ -280,7 +280,7 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
     pnl: Math.round(kpiPnl),
     turnover: Math.round(kpiTurnover),
     bets: Math.round(kpiBets),
-    margin: kpiMargin,
+    margin: Math.abs(kpiMargin) > 0 && Math.abs(kpiMargin) < 1 ? kpiMargin * 100 : kpiMargin,
     rejections: Math.round(kpiRejections),
     highRiskUsers: kpiHighRiskUsers,
   };
