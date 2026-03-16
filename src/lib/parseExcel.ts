@@ -284,16 +284,22 @@ function extractAllUsersFromReport(grid: any[][]): UserSummary[] {
       const row = grid[r];
       const c0 = str(row?.[0]).toLowerCase();
       if (c0 && (c0.includes('risk') || c0.includes('market') || c0.includes('sport') || c0.includes('rejection'))) break;
-      // Skip empty rows
+
       const nick = str(row?.[colMap['nickname']]);
       const srcId = str(row?.[colMap['sourceId']]);
       if (!nick && !srcId) continue;
+
+      // Filter out footer rows like "Generated: 2026-03-16 | Excluded: ..."
+      const combined = `${nick} ${srcId}`.toLowerCase();
+      if (combined.includes('generated') || combined.includes('excluded')) continue;
+      if (/^\d{4}-\d{2}-\d{2}/.test(nick) || /^\d{4}-\d{2}-\d{2}/.test(srcId)) continue;
 
       const share = num(row?.[colMap['share']]);
       const sharePct = share > 1 ? share : share * 100;
       const userTurnover = Math.round(num(row?.[colMap['turnover']]));
       const userPnl = Math.round(num(row?.[colMap['pnl']]));
-      const userMargin = colMap['margin'] !== undefined ? num(row?.[colMap['margin']]) : (userTurnover > 0 ? (userPnl / userTurnover) * 100 : 0);
+      // Calculate margin as P&L / Turnover
+      const userMargin = userTurnover > 0 ? (userPnl / userTurnover) * 100 : 0;
 
       users.push({
         userId: srcId || nick.slice(0, 8),
@@ -301,8 +307,9 @@ function extractAllUsersFromReport(grid: any[][]): UserSummary[] {
         bets: Math.round(num(row?.[colMap['bets']])),
         turnover: userTurnover,
         pnl: userPnl,
-        margin: userMargin > 1 || userMargin < -1 ? userMargin : userMargin * 100,
-        concentrationRisk: (sharePct > 50 ? 'high' : sharePct > 20 ? 'medium' : 'low') as 'high' | 'medium' | 'low',
+        margin: userMargin,
+        concentrationRisk: 'low', // will be recalculated after CCF enrichment
+        turnoverSharePct: sharePct,
       });
     }
   }
@@ -468,10 +475,41 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
         turnover: Math.round(data.turnover),
         pnl: Math.round(data.pnl),
         margin: data.turnover > 0 ? (data.pnl / data.turnover) * 100 : 0,
-        concentrationRisk: (concPct > 50 ? 'high' : concPct > 20 ? 'medium' : 'low') as 'high' | 'medium' | 'low',
+        concentrationRisk: 'low',
+        turnoverSharePct: concPct,
       });
     }
   }
+
+  // Enrich users with CCF from Raw Data and calculate risk badges
+  const totalDayTurnover = kpiSummary.turnover || userSummaries.reduce((s, u) => s + u.turnover, 0);
+  for (const user of userSummaries) {
+    // Find max CCF for this user from raw data
+    let maxCcf: number | null = null;
+    for (const row of rawRows) {
+      const nickname = str(row['Nickname']);
+      const sourceId = str(row['Source ID'] || row['SourceID'] || row['Source']);
+      if (nickname === user.username || sourceId === user.userId || nickname === user.userId) {
+        const ccfVal = num(row['CCF'] || row['Customer Factor'] || row['CustomerFactor']);
+        if (ccfVal !== 0 && (maxCcf === null || ccfVal > maxCcf)) {
+          maxCcf = ccfVal;
+        }
+      }
+    }
+    user.ccf = maxCcf;
+    const sharePct = user.turnoverSharePct ?? (totalDayTurnover > 0 ? (user.turnover / totalDayTurnover) * 100 : 0);
+    user.turnoverSharePct = sharePct;
+
+    // Risk: HIGH if CCF > 3.0 or turnover share > 50%, MEDIUM if CCF > 1.5, else LOW
+    if ((maxCcf !== null && maxCcf > 3.0) || sharePct > 50) {
+      user.concentrationRisk = 'high';
+    } else if (maxCcf !== null && maxCcf > 1.5) {
+      user.concentrationRisk = 'medium';
+    } else {
+      user.concentrationRisk = 'low';
+    }
+  }
+
   userSummaries.sort((a, b) => b.turnover - a.turnover);
 
   // If no high risk users found in Report, count from raw data
