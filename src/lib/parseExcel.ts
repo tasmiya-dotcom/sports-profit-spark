@@ -505,18 +505,20 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
   // === TOP PLAYER with CCF ===
   let topPlayer: TopPlayerSpotlight | null = null;
   if (topPlayerFromReport) {
-    // Try to find CCF from Raw Data for this player
-    let ccf: number | null = null;
+    // Find the maximum CCF from Raw Data for this player
+    let maxCcf: number | null = null;
     const playerKey = topPlayerFromReport.nickname !== '—' ? topPlayerFromReport.nickname : topPlayerFromReport.sourceId;
     for (const row of rawRows) {
       const nickname = str(row['Nickname']);
       const sourceId = str(row['Source ID'] || row['SourceID'] || row['Source']);
       if (nickname === playerKey || sourceId === playerKey || sourceId === topPlayerFromReport.sourceId) {
         const ccfVal = num(row['CCF'] || row['Customer Factor'] || row['CustomerFactor']);
-        if (ccfVal !== 0) { ccf = ccfVal; break; }
+        if (ccfVal !== 0 && (maxCcf === null || ccfVal > maxCcf)) {
+          maxCcf = ccfVal;
+        }
       }
     }
-    topPlayer = { ...topPlayerFromReport, ccf };
+    topPlayer = { ...topPlayerFromReport, ccf: maxCcf };
   }
 
   const hourlyBets = Array.from({ length: 24 }, (_, h) => ({ hour: h, count: hourMap.get(h) || 0 }));
