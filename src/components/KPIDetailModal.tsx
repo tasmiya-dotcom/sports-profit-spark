@@ -204,7 +204,7 @@ const KPIDetailModal = ({ type, data, onClose }: KPIDetailModalProps) => {
       }
 
       case 'highRisk': {
-        const highRiskUsers = data.userSummaries.filter(u => u.turnover > data.kpiSummary.turnover * 0.1 || (u.ccf !== undefined && u.ccf > 1));
+        const highRiskUsers = data.userSummaries.filter(u => u.turnover > data.kpiSummary.turnover * 0.1);
         return (
           <>
             <h2 className="text-lg font-bold text-white mb-1">High Risk Users</h2>
