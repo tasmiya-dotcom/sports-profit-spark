@@ -62,6 +62,8 @@ export interface KPISummary {
   margin: number;
   rejections: number;
   highRiskUsers: number;
+  rejectedTurnover: number;
+  potentialPnl: number;
 }
 
 export interface HourlyBets {
