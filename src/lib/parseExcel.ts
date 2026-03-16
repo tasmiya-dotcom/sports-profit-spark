@@ -372,6 +372,7 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
 
   // Sports breakdown
   const sportsBreakdown: SportBreakdown[] = [];
+  console.log('sportMap entries:', Array.from(sportMap.entries()).map(([k, v]) => `${k}: bets=${v.bets}, turnover=${v.turnover}, pnl=${v.pnl}`));
   for (const [sport, data] of sportMap) {
     sportsBreakdown.push({
       sport,
@@ -382,6 +383,7 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
     });
   }
   sportsBreakdown.sort((a, b) => b.turnover - a.turnover);
+  console.log('sportsBreakdown result:', JSON.stringify(sportsBreakdown));
 
   // User summaries — prefer Report sheet "Per User Summary" section, fallback to Raw Data
   const reportUsers = extractAllUsersFromReport(reportGrid);
