@@ -200,6 +200,13 @@ const KPIDetailModal = ({ type, data, onClose }: KPIDetailModalProps) => {
               </tfoot>
             </table>
           </>
+        );
+      }
+
+      case 'highRisk': {
+        const highRiskUsers = data.userSummaries.filter(u => u.turnover > data.kpiSummary.turnover * 0.1 || (u.ccf !== undefined && u.ccf > 1));
+        return (
+          <>
             <h2 className="text-lg font-bold text-white mb-1">High Risk Users</h2>
             <p className="text-sm text-[#888] mb-4">Users flagged due to high concentration of turnover or elevated CCF customer factor score.</p>
             {highRiskUsers.length === 0 ? (
