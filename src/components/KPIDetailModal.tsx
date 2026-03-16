@@ -164,7 +164,9 @@ const KPIDetailModal = ({ type, data, onClose }: KPIDetailModalProps) => {
         );
       }
 
-      case 'rejections':
+      case 'rejections': {
+        const INTERNAL_TEST_RE = /test|arsen|internal|dummy/i;
+        const filteredRejections = data.rejectionReasons.filter(r => !INTERNAL_TEST_RE.test(r.reason));
         return (
           <>
             <h2 className="text-lg font-bold text-white mb-1">Rejections Breakdown</h2>
@@ -179,7 +181,7 @@ const KPIDetailModal = ({ type, data, onClose }: KPIDetailModalProps) => {
                 </tr>
               </thead>
               <tbody>
-                {data.rejectionReasons.map(r => (
+                {filteredRejections.map(r => (
                   <tr key={r.reason} className="border-b border-[#222]">
                     <td className="py-2 text-white">{r.reason}</td>
                     <td className="py-2 text-right text-[#ccc] font-mono">{r.count}</td>
@@ -191,17 +193,18 @@ const KPIDetailModal = ({ type, data, onClose }: KPIDetailModalProps) => {
               <tfoot>
                 <tr className="border-t border-[#444]">
                   <td className="py-2 text-white font-bold">Total</td>
-                  <td className="py-2 text-right text-white font-bold font-mono">{kpi.rejections}</td>
-                  <td className="py-2 text-right text-white font-bold font-mono">{fmt(data.rejectionReasons.reduce((s, r) => s + r.blockedTurnover, 0))}</td>
+                  <td className="py-2 text-right text-white font-bold font-mono">{filteredRejections.reduce((s, r) => s + r.count, 0)}</td>
+                  <td className="py-2 text-right text-white font-bold font-mono">{fmt(filteredRejections.reduce((s, r) => s + r.blockedTurnover, 0))}</td>
                   <td className="py-2 text-right text-white font-bold font-mono">100%</td>
                 </tr>
               </tfoot>
             </table>
           </>
         );
+      }
 
       case 'highRisk': {
-        const highRiskUsers = data.userSummaries.filter(u => u.concentrationRisk === 'high');
+        const highRiskUsers = data.userSummaries.filter(u => u.turnover > data.kpiSummary.turnover * 0.1);
         return (
           <>
             <h2 className="text-lg font-bold text-white mb-1">High Risk Users</h2>
