@@ -99,21 +99,76 @@ function extractReportDate(grid: any[][]): { iso: string; label: string } {
 }
 
 /**
- * Find a value in Report grid by searching for a label in column A.
+ * Find a value in Report grid by searching for a label in any column.
  */
 function findReportValue(grid: any[][], label: string): number {
   const labelLower = label.toLowerCase();
   for (const row of grid) {
-    const cellLabel = str(row[0]).toLowerCase();
-    if (cellLabel.includes(labelLower)) {
-      // Return the first numeric value in the row
-      for (let c = 1; c < row.length; c++) {
-        const v = num(row[c]);
-        if (v !== 0 || str(row[c]).trim() === '0') return v;
+    for (let c = 0; c < (row?.length || 0); c++) {
+      const cellText = str(row[c]).toLowerCase();
+      if (cellText.includes(labelLower)) {
+        // Return the first numeric value after this cell
+        for (let vc = c + 1; vc < row.length; vc++) {
+          const v = num(row[vc]);
+          if (v !== 0 || str(row[vc]).trim() === '0') return v;
+        }
       }
     }
   }
   return 0;
+}
+
+/**
+ * Find values from the RISK & CONTROLS section in the Report sheet.
+ */
+function findRiskControlsValues(grid: any[][]): { rejectedTurnover: number; potentialPnl: number; rejectedBets: number } {
+  let inRiskSection = false;
+  const result = { rejectedTurnover: 0, potentialPnl: 0, rejectedBets: 0 };
+
+  for (let r = 0; r < grid.length; r++) {
+    const cell0 = str(grid[r]?.[0]).toLowerCase();
+    
+    if (cell0.includes('risk') && (cell0.includes('control') || cell0.includes('total'))) {
+      inRiskSection = true;
+      for (let c = 1; c < (grid[r]?.length || 0); c++) {
+        const v = num(grid[r][c]);
+        if (v !== 0) { if (result.rejectedBets === 0) result.rejectedBets = Math.round(v); break; }
+      }
+      continue;
+    }
+
+    if (inRiskSection) {
+      if (cell0 && (cell0.includes('per user') || cell0.includes('user summary') || cell0.includes('market pattern') || cell0.includes('sport'))) break;
+      
+      for (let c = 0; c < (grid[r]?.length || 0); c++) {
+        const cellText = str(grid[r][c]).toLowerCase();
+        
+        if (cellText.includes('rejected') && (cellText.includes('turnover') || cellText.includes('stake'))) {
+          for (let vc = c + 1; vc < (grid[r]?.length || 0); vc++) {
+            const v = num(grid[r][vc]);
+            if (v !== 0 || str(grid[r][vc]).trim() === '0') { result.rejectedTurnover = v; break; }
+          }
+        }
+        
+        if ((cellText.includes('potential') || cellText.includes('lost')) && (cellText.includes('p&l') || cellText.includes('pnl'))) {
+          for (let vc = c + 1; vc < (grid[r]?.length || 0); vc++) {
+            const v = num(grid[r][vc]);
+            if (v !== 0 || str(grid[r][vc]).trim() === '0') { result.potentialPnl = v; break; }
+          }
+        }
+        
+        if (cellText.includes('rejected') && cellText.includes('bet')) {
+          for (let vc = c + 1; vc < (grid[r]?.length || 0); vc++) {
+            const v = num(grid[r][vc]);
+            if (v !== 0 || str(grid[r][vc]).trim() === '0') { result.rejectedBets = Math.round(v); break; }
+          }
+        }
+      }
+    }
+  }
+
+  console.log('Risk & Controls parsed:', result);
+  return result;
 }
 
 /**
