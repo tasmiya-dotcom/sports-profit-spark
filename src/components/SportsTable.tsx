@@ -45,7 +45,7 @@ const SportsTable = ({ data }: SportsTableProps) => {
               <ResponsiveContainer width="100%" height={Math.max(200, data.length * 36)}>
                 <BarChart data={data} layout="vertical" margin={{ left: 80, right: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 14% 18%)" />
-                  <XAxis type="number" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} tickFormatter={(v) => `${symbol}${(Math.abs(convert(v)) / 1000).toFixed(0)}k`} />
+                  <XAxis type="number" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} tickFormatter={(v) => { const cv = Math.abs(convert(v)); if (cv === 0) return `${symbol}0`; if (cv >= 1000) return `${symbol}${(cv / 1000).toFixed(cv >= 10000 ? 0 : 1)}k`; return `${symbol}${Math.round(cv)}`; }} />
                   <YAxis type="category" dataKey="sport" tick={{ fill: 'hsl(215 12% 52%)', fontSize: 11 }} width={75} />
                   <Tooltip
                     contentStyle={{ backgroundColor: '#1e1e1e', border: '1px solid #00e554', borderRadius: '8px' }}
