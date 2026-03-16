@@ -630,6 +630,8 @@ export function generateDemoData(): DashboardData {
       margin: totalTO > 0 ? (totalPnL / totalTO) * 100 : 0,
       rejections: totalRejCount,
       highRiskUsers: userSummaries.filter(u => u.concentrationRisk === 'high').length,
+      rejectedTurnover: Math.round(totalRejCount * 150),
+      potentialPnl: Math.round(totalRejCount * 30),
     },
     dailyPnL, betSplit, sportsBreakdown, rejectionReasons, userSummaries, marketPatterns,
     topPlayer: {

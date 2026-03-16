@@ -51,7 +51,7 @@ function makeDemoDay(overrides: {
   return {
     reportDate: date,
     reportLabel: label,
-    kpiSummary: { pnl, turnover, bets, margin, rejections, highRiskUsers },
+    kpiSummary: { pnl, turnover, bets, margin, rejections, highRiskUsers, rejectedTurnover: Math.round(rejections * 150), potentialPnl: Math.round(rejections * 30) },
     dailyPnL: [{ date: label.slice(0, 6), pnl, margin, turnover }],
     betSplit: [{ date: label, liveBets: Math.round(bets * 0.45), prematchBets: Math.round(bets * 0.55), liveTurnover: Math.round(turnover * 0.4), prematchTurnover: Math.round(turnover * 0.6) }],
     sportsBreakdown,
