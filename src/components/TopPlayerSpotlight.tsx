@@ -45,11 +45,13 @@ const TopPlayerSpotlightPanel = ({ player }: TopPlayerSpotlightProps) => {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="flex items-start gap-2">
+        <div className="flex items-start gap-2 min-w-0">
           <User className={`w-4 h-4 mt-0.5 shrink-0 ${isHighRisk ? 'text-destructive' : 'text-primary'}`} />
-          <div>
+          <div className="min-w-0">
             <p className="text-xs text-muted-foreground">Player</p>
-            <p className={`text-sm font-bold ${isHighRisk ? 'text-destructive' : 'text-foreground'}`}>
+            <p className={`font-bold truncate ${isHighRisk ? 'text-destructive' : 'text-foreground'} ${
+              displayName.length > 20 ? 'text-xs' : 'text-sm'
+            }`} title={displayName}>
               {displayName}
             </p>
           </div>
