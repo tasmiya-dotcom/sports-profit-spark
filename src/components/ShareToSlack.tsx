@@ -101,7 +101,7 @@ function buildSlackMessage(d: DashboardData): string {
     .filter(u => !isTestUser(u.userId, u.username) && !isFooterRow(u.userId, u.username))
     .sort((a, b) => b.turnover - a.turnover);
   
-  const marketLines = d.marketPatterns.filter(m => m.count > 0).sort((a, b) => b.count - a.count).slice(0, 5);
+  const marketLines = d.rawMarkets.filter(m => m.count > 0).sort((a, b) => b.count - a.count).slice(0, 5);
 
   const lines: string[] = [];
   lines.push(`📊 *Sportsbook Performance Report: ${date} (00:00 - 23:59)*`);
