@@ -149,7 +149,7 @@ function buildSlackMessage(d: DashboardData): string {
   if (marketLines.length > 0) {
     lines.push(`*Market Pattern (Top ${marketLines.length})*`);
     for (const m of marketLines) {
-      lines.push(`• ${m.market}: ${m.count.toLocaleString()} bets`);
+      lines.push(`• ${m.market}: ${m.count.toLocaleString()} ${m.count === 1 ? 'bet' : 'bets'}`);
     }
     lines.push('');
   }
