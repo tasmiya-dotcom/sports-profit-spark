@@ -24,7 +24,7 @@ const BetSplitChart = ({ data }: BetSplitChartProps) => {
     { name: 'Pre-match', value: d.prematchTurnover },
   ];
 
-  const COLORS = ['#00e554', '#444444'];
+  const COLORS = ['#00e554', '#3b82f6'];
 
   return (
     <div className="kpi-card !p-0 overflow-hidden">
