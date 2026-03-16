@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import type { DashboardData } from '@/lib/types';
-import { DEFAULT_ENTRIES } from '@/lib/defaultData';
 import { supabase } from '@/lib/supabase';
 
 export interface HistoryEntry {
@@ -9,17 +8,13 @@ export interface HistoryEntry {
   fileName: string;
   uploadedAt: string;
   data: DashboardData;
-  isDefault?: boolean;
 }
-
-const DEFAULT_IDS = new Set(DEFAULT_ENTRIES.map(e => e.id));
 
 export function useDashboardHistory() {
   const [uploadedHistory, setUploadedHistory] = useState<HistoryEntry[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch from Supabase on mount
   useEffect(() => {
     const fetchHistory = async () => {
       try {
@@ -53,18 +48,13 @@ export function useDashboardHistory() {
     fetchHistory();
   }, []);
 
-  // Always merge defaults + uploaded, sorted by date
   const history = useMemo(() => {
-    const merged = [...DEFAULT_ENTRIES, ...uploadedHistory];
-    return merged.sort((a, b) => a.id.localeCompare(b.id));
+    return [...uploadedHistory].sort((a, b) => a.id.localeCompare(b.id));
   }, [uploadedHistory]);
 
   const addEntry = useCallback(async (data: DashboardData, fileName: string) => {
     const id = data.reportDate;
     const label = data.reportLabel;
-
-    // Don't overwrite default entries
-    if (DEFAULT_IDS.has(id)) return;
 
     const entry: HistoryEntry = {
       id,
@@ -74,13 +64,11 @@ export function useDashboardHistory() {
       data,
     };
 
-    // Optimistic local update
     setUploadedHistory(prev => {
       const filtered = prev.filter(e => e.id !== id);
       return [...filtered, entry].sort((a, b) => a.id.localeCompare(b.id));
     });
 
-    // Persist to Supabase
     const { error } = await supabase
       .from('daily_reports')
       .upsert({
@@ -95,7 +83,6 @@ export function useDashboardHistory() {
   }, []);
 
   const deleteEntry = useCallback(async (id: string) => {
-    if (DEFAULT_IDS.has(id)) return;
     setUploadedHistory(prev => prev.filter(e => e.id !== id));
     if (selectedId === id) setSelectedId(null);
 
