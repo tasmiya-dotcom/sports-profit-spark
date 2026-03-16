@@ -49,8 +49,8 @@ const TopPlayerSpotlightPanel = ({ player }: TopPlayerSpotlightProps) => {
           <User className={`w-4 h-4 mt-0.5 shrink-0 ${isHighRisk ? 'text-destructive' : 'text-primary'}`} />
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground">Player</p>
-            <p className={`font-bold truncate ${isHighRisk ? 'text-destructive' : 'text-foreground'} ${
-              displayName.length > 20 ? 'text-xs' : 'text-sm'
+            <p className={`font-bold break-all ${isHighRisk ? 'text-destructive' : 'text-foreground'} ${
+              displayName.length > 30 ? 'text-[9px] leading-tight' : displayName.length > 20 ? 'text-[10px] leading-tight' : 'text-sm'
             }`} title={displayName}>
               {displayName}
             </p>
