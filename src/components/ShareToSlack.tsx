@@ -100,7 +100,7 @@ function buildSlackMessage(d: DashboardData): string {
   const users = [...d.userSummaries]
     .filter(u => !isTestUser(u.userId, u.username) && !isFooterRow(u.userId, u.username))
     .sort((a, b) => b.turnover - a.turnover);
-  const validRejections = d.rejectionReasons.filter(r => r.count > 0 && isValidRejectionReason(r.reason));
+  
   const marketLines = d.marketPatterns.filter(m => m.count > 0).sort((a, b) => b.count - a.count).slice(0, 10);
 
   const lines: string[] = [];
