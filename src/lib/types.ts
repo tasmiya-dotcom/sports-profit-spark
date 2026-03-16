@@ -37,6 +37,8 @@ export interface UserSummary {
   pnl: number;
   margin: number;
   concentrationRisk: 'low' | 'medium' | 'high';
+  ccf?: number | null;
+  turnoverSharePct?: number;
 }
 
 export interface MarketPattern {

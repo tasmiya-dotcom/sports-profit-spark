@@ -284,16 +284,22 @@ function extractAllUsersFromReport(grid: any[][]): UserSummary[] {
       const row = grid[r];
       const c0 = str(row?.[0]).toLowerCase();
       if (c0 && (c0.includes('risk') || c0.includes('market') || c0.includes('sport') || c0.includes('rejection'))) break;
-      // Skip empty rows
+
       const nick = str(row?.[colMap['nickname']]);
       const srcId = str(row?.[colMap['sourceId']]);
       if (!nick && !srcId) continue;
+
+      // Filter out footer rows like "Generated: 2026-03-16 | Excluded: ..."
+      const combined = `${nick} ${srcId}`.toLowerCase();
+      if (combined.includes('generated') || combined.includes('excluded')) continue;
+      if (/^\d{4}-\d{2}-\d{2}/.test(nick) || /^\d{4}-\d{2}-\d{2}/.test(srcId)) continue;
 
       const share = num(row?.[colMap['share']]);
       const sharePct = share > 1 ? share : share * 100;
       const userTurnover = Math.round(num(row?.[colMap['turnover']]));
       const userPnl = Math.round(num(row?.[colMap['pnl']]));
-      const userMargin = colMap['margin'] !== undefined ? num(row?.[colMap['margin']]) : (userTurnover > 0 ? (userPnl / userTurnover) * 100 : 0);
+      // Calculate margin as P&L / Turnover
+      const userMargin = userTurnover > 0 ? (userPnl / userTurnover) * 100 : 0;
 
       users.push({
         userId: srcId || nick.slice(0, 8),
@@ -301,8 +307,9 @@ function extractAllUsersFromReport(grid: any[][]): UserSummary[] {
         bets: Math.round(num(row?.[colMap['bets']])),
         turnover: userTurnover,
         pnl: userPnl,
-        margin: userMargin > 1 || userMargin < -1 ? userMargin : userMargin * 100,
-        concentrationRisk: (sharePct > 50 ? 'high' : sharePct > 20 ? 'medium' : 'low') as 'high' | 'medium' | 'low',
+        margin: userMargin,
+        concentrationRisk: 'low', // will be recalculated after CCF enrichment
+        turnoverSharePct: sharePct,
       });
     }
   }
