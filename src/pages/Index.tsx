@@ -271,7 +271,7 @@ const Index = () => {
         )}
       </main>
 
-      {kpiModal && <KPIDetailModal type={kpiModal} data={data} onClose={() => setKpiModal(null)} />}
+      {kpiModal && data && <KPIDetailModal type={kpiModal} data={data} onClose={() => setKpiModal(null)} />}
     </div>
   );
 };
