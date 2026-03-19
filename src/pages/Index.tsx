@@ -107,10 +107,11 @@ const Index = () => {
     setUploadSuccess(null);
     setIsLoading(true);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
         const parsed = parseExcelFile(buffer);
-        addEntry(parsed, fileName);
+        await addEntry(parsed, fileName);
+        setSelectedId(parsed.reportDate);
         setUploadSuccess(`"${fileName}" loaded — ${parsed.reportLabel}`);
         setTimeout(() => setUploadSuccess(null), 4000);
       } catch (e: any) {
