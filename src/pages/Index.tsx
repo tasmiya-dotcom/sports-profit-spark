@@ -227,6 +227,7 @@ const Index = () => {
         />
 
         {/* KPI Row */}
+        {kpi && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <KPICard
             title="Total P&L"
@@ -242,14 +243,17 @@ const Index = () => {
           <KPICard title="Rejections" value={kpi.rejections.toLocaleString()} icon="warning" trend="neutral" onClick={() => setKpiModal('rejections')} />
           <KPICard title="High Risk Users" value={kpi.highRiskUsers.toString()} icon="warning" trend={kpi.highRiskUsers > 0 ? 'down' : 'neutral'} onClick={() => setKpiModal('highRisk')} />
         </div>
+        )}
 
         <SevenDaySummary history={history} />
         <PerformanceTrends history={history} />
-        <TopPlayerSpotlightPanel player={data.topPlayer} />
+        {data && <TopPlayerSpotlightPanel player={data.topPlayer} />}
         <AudienceInsights history={history} />
         <PostMatchReports />
         <IplMatchTracker />
 
+        {data && (
+        <>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <PnLChart history={history} selectedId={selectedId} onSelectDay={setSelectedId} />
@@ -263,6 +267,8 @@ const Index = () => {
           <UserSummaryTable data={data.userSummaries} />
         </div>
         <MarketPatternChart data={data.marketPatterns} />
+        </>
+        )}
       </main>
 
       {kpiModal && <KPIDetailModal type={kpiModal} data={data} onClose={() => setKpiModal(null)} />}
