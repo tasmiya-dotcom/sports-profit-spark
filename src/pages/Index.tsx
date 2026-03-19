@@ -36,10 +36,10 @@ const Index = () => {
   const [isExporting, setIsExporting] = useState(false);
   const dashboardRef = useRef<HTMLElement>(null);
 
-  const data: DashboardData = activeData ?? history[0].data;
+  const data: DashboardData | null = activeData ?? (history.length > 0 ? history[0].data : null);
   // For Slack share: use selected day, or most recently uploaded day if "All Days"
-  const slackData: DashboardData = activeData ?? (history.length > 1 ? history[1].data : history[0].data);
-  const kpi = data.kpiSummary;
+  const slackData: DashboardData | null = activeData ?? (history.length > 1 ? history[1].data : history.length > 0 ? history[0].data : null);
+  const kpi = data?.kpiSummary ?? null;
 
   const handleDownloadPDF = useCallback(async () => {
     if (!dashboardRef.current || isExporting) return;
