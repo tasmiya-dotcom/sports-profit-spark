@@ -226,46 +226,55 @@ const Index = () => {
           onResetAll={handleResetAll}
         />
 
-        {/* KPI Row */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <KPICard
-            title="Total P&L"
-            value={fmtSigned(kpi.pnl)}
-            trend={kpi.pnl >= 0 ? 'up' : 'down'}
-            icon="profit"
-            subtitle={activeData ? activeData.reportLabel : `${history.length} days`}
-            onClick={() => setKpiModal('pnl')}
-          />
-          <KPICard title="Turnover" value={fmt(kpi.turnover)} icon="bets" onClick={() => setKpiModal('turnover')} />
-          <KPICard title="Avg Margin" value={`${kpi.margin.toFixed(2)}%`} trend={kpi.margin >= 0 ? 'up' : 'down'} icon="margin" onClick={() => setKpiModal('margin')} />
-          <KPICard title="Total Bets" value={kpi.bets.toLocaleString()} icon="bets" onClick={() => setKpiModal('bets')} />
-          <KPICard title="Rejections" value={kpi.rejections.toLocaleString()} icon="warning" trend="neutral" onClick={() => setKpiModal('rejections')} />
-          <KPICard title="High Risk Users" value={kpi.highRiskUsers.toString()} icon="warning" trend={kpi.highRiskUsers > 0 ? 'down' : 'neutral'} onClick={() => setKpiModal('highRisk')} />
-        </div>
+        {data && kpi ? (
+          <>
+            {/* KPI Row */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <KPICard
+                title="Total P&L"
+                value={fmtSigned(kpi.pnl)}
+                trend={kpi.pnl >= 0 ? 'up' : 'down'}
+                icon="profit"
+                subtitle={activeData ? activeData.reportLabel : `${history.length} days`}
+                onClick={() => setKpiModal('pnl')}
+              />
+              <KPICard title="Turnover" value={fmt(kpi.turnover)} icon="bets" onClick={() => setKpiModal('turnover')} />
+              <KPICard title="Avg Margin" value={`${kpi.margin.toFixed(2)}%`} trend={kpi.margin >= 0 ? 'up' : 'down'} icon="margin" onClick={() => setKpiModal('margin')} />
+              <KPICard title="Total Bets" value={kpi.bets.toLocaleString()} icon="bets" onClick={() => setKpiModal('bets')} />
+              <KPICard title="Rejections" value={kpi.rejections.toLocaleString()} icon="warning" trend="neutral" onClick={() => setKpiModal('rejections')} />
+              <KPICard title="High Risk Users" value={kpi.highRiskUsers.toString()} icon="warning" trend={kpi.highRiskUsers > 0 ? 'down' : 'neutral'} onClick={() => setKpiModal('highRisk')} />
+            </div>
 
-        <SevenDaySummary history={history} />
-        <PerformanceTrends history={history} />
-        <TopPlayerSpotlightPanel player={data.topPlayer} />
-        <AudienceInsights history={history} />
-        <PostMatchReports />
-        <IplMatchTracker />
+            <SevenDaySummary history={history} />
+            <PerformanceTrends history={history} />
+            <TopPlayerSpotlightPanel player={data.topPlayer} />
+            <AudienceInsights history={history} />
+            <PostMatchReports />
+            <IplMatchTracker />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <PnLChart history={history} selectedId={selectedId} onSelectDay={setSelectedId} />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <PnLChart history={history} selectedId={selectedId} onSelectDay={setSelectedId} />
+              </div>
+              <BetSplitChart data={data.betSplit} />
+            </div>
+
+            <SportsTable data={data.sportsBreakdown} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <RejectionsTable data={data.rejectionReasons} />
+              <UserSummaryTable data={data.userSummaries} />
+            </div>
+            <MarketPatternChart data={data.marketPatterns} />
+          </>
+        ) : (
+          <div className="text-center py-16 text-muted-foreground">
+            <p className="text-lg font-medium">Upload an Excel report to get started</p>
+            <p className="text-sm mt-1">Drag & drop or use the upload button above</p>
           </div>
-          <BetSplitChart data={data.betSplit} />
-        </div>
-
-        <SportsTable data={data.sportsBreakdown} />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <RejectionsTable data={data.rejectionReasons} />
-          <UserSummaryTable data={data.userSummaries} />
-        </div>
-        <MarketPatternChart data={data.marketPatterns} />
+        )}
       </main>
 
-      {kpiModal && <KPIDetailModal type={kpiModal} data={data} onClose={() => setKpiModal(null)} />}
+      {kpiModal && data && <KPIDetailModal type={kpiModal} data={data} onClose={() => setKpiModal(null)} />}
     </div>
   );
 };
