@@ -155,7 +155,7 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-4">
             <CurrencyToggle />
-            <ShareToSlack data={slackData} />
+            {slackData && <ShareToSlack data={slackData} />}
             <button
               onClick={handleDownloadPDF}
               disabled={isExporting}
