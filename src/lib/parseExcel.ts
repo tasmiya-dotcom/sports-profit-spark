@@ -350,7 +350,9 @@ export function parseExcelFile(buffer: ArrayBuffer): DashboardData {
 
   // Read rejection values from RISK & CONTROLS section specifically
   const riskControls = findRiskControlsValues(reportGrid);
-  const kpiRejections = riskControls.rejectedBets || findReportValue(reportGrid, 'risk & controls') || findReportValue(reportGrid, 'rejected bets') || findReportValue(reportGrid, 'rejected');
+  // Only use specific "rejected bets" lookups — never fall back to generic 'rejected' or 'risk & controls'
+  // which can match rejected turnover values and inflate the rejection rate
+  const kpiRejections = riskControls.rejectedBets || findReportValue(reportGrid, 'rejected bets') || findReportValue(reportGrid, 'total rejected bets');
   const kpiRejectedTurnover = riskControls.rejectedTurnover || findReportValue(reportGrid, 'rejected turnover') || findReportValue(reportGrid, 'rejected stake');
   const kpiPotentialPnl = riskControls.potentialPnl || findReportValue(reportGrid, 'potential p&l') || findReportValue(reportGrid, 'potential pnl') || findReportValue(reportGrid, 'lost p&l');
 
