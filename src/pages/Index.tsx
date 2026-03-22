@@ -130,7 +130,7 @@ const Index = () => {
             {history.length >= 2 && <PerformanceTrends history={history} />}
 
             {/* Audience Insights */}
-            <AudienceInsights data={data} history={history} />
+            <AudienceInsights history={history} />
           </>
         )}
 
