@@ -36,9 +36,11 @@ const Index = () => {
   const [isExporting, setIsExporting] = useState(false);
   const dashboardRef = useRef<HTMLElement>(null);
 
-  const data: DashboardData | null = activeData ?? (history.length > 0 ? history[0].data : null);
-  // For Slack share: use selected day, or most recently uploaded day if "All Days"
-  const slackData: DashboardData | null = activeData ?? (history.length > 1 ? history[1].data : history.length > 0 ? history[0].data : null);
+  const data: DashboardData | null = activeData ?? (history.length > 0 ? history[history.length - 1].data : null);
+
+  // For Slack share: use selected day, or most recently uploaded day
+  const slackData: DashboardData | null = activeData ?? (history.length > 0 ? history[history.length - 1].data : null);
+
   const kpi = data?.kpiSummary ?? null;
 
   const handleDownloadPDF = useCallback(async () => {
@@ -102,7 +104,7 @@ const Index = () => {
     }
   }, [activeData, isExporting]);
 
-  const handleFileLoad = (buffer: ArrayBuffer, fileName: string) => {
+  const handleFileLoad = useCallback((buffer: ArrayBuffer, fileName: string) => {
     setUploadError(null);
     setUploadSuccess(null);
     setIsLoading(true);
@@ -111,6 +113,7 @@ const Index = () => {
       try {
         const parsed = parseExcelFile(buffer);
         await addEntry(parsed, fileName);
+        // Always select the newly uploaded day so dashboard updates immediately
         setSelectedId(parsed.reportDate);
         setUploadSuccess(`"${fileName}" loaded — ${parsed.reportLabel}`);
         setTimeout(() => setUploadSuccess(null), 4000);
@@ -121,13 +124,13 @@ const Index = () => {
         setIsLoading(false);
       }
     }, 50);
-  };
+  }, [addEntry, setSelectedId]);
 
-  const handleResetAll = () => {
+  const handleResetAll = useCallback(() => {
     resetAll();
     setUploadError(null);
     setUploadSuccess(null);
-  };
+  }, [resetAll]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -137,17 +140,21 @@ const Index = () => {
           <div className="flex items-center gap-3">
             <Activity className="w-6 h-6 text-primary" />
             <div>
-              <h1 className="text-lg font-bold tracking-tight uppercase"><span className="text-foreground">ARENA</span><span style={{ color: '#7ed321' }}>365</span></h1>
+              <h1 className="text-lg font-bold tracking-tight uppercase">
+                <span className="text-foreground">ARENA</span>
+                <span style={{ color: '#7ed321' }}>365</span>
+              </h1>
               <p className="text-xs text-muted-foreground">
                 {activeData
                   ? `Viewing: ${activeData.reportLabel}`
-                  : selectedId === null ? `${history.length} days loaded` : 'Select a day'}
+                  : selectedId === null
+                  ? `${history.length} days loaded`
+                  : 'Select a day'}
               </p>
               <p className="text-[10px] text-muted-foreground/60">
                 {(() => {
-                  const uploaded = history;
-                  if (uploaded.length === 0) return 'No data uploaded yet';
-                  const latest = uploaded.reduce((a, b) => a.uploadedAt > b.uploadedAt ? a : b);
+                  if (history.length === 0) return 'No data uploaded yet';
+                  const latest = history.reduce((a, b) => a.uploadedAt > b.uploadedAt ? a : b);
                   const d = new Date(latest.uploadedAt);
                   return `Last updated: ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} at ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
                 })()}
@@ -166,7 +173,7 @@ const Index = () => {
               {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
               {isExporting ? 'Generating…' : 'Download Report'}
             </button>
-            {history.length > 2 && (
+            {history.length > 0 && (
               <button
                 onClick={handleResetAll}
                 className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -229,21 +236,33 @@ const Index = () => {
 
         {/* KPI Row */}
         {kpi && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <KPICard
-            title="Total P&L"
-            value={fmtSigned(kpi.pnl)}
-            trend={kpi.pnl >= 0 ? 'up' : 'down'}
-            icon="profit"
-            subtitle={activeData ? activeData.reportLabel : `${history.length} days`}
-            onClick={() => setKpiModal('pnl')}
-          />
-          <KPICard title="Turnover" value={fmt(kpi.turnover)} icon="bets" onClick={() => setKpiModal('turnover')} />
-          <KPICard title="Avg Margin" value={`${kpi.margin.toFixed(2)}%`} trend={kpi.margin >= 0 ? 'up' : 'down'} icon="margin" onClick={() => setKpiModal('margin')} />
-          <KPICard title="Total Bets" value={kpi.bets.toLocaleString()} icon="bets" onClick={() => setKpiModal('bets')} />
-          <KPICard title="Rejections" value={kpi.rejections.toLocaleString()} icon="warning" trend="neutral" onClick={() => setKpiModal('rejections')} />
-          <KPICard title="High Risk Users" value={kpi.highRiskUsers.toString()} icon="warning" trend={kpi.highRiskUsers > 0 ? 'down' : 'neutral'} onClick={() => setKpiModal('highRisk')} />
-        </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <KPICard
+              title="Total P&L"
+              value={fmtSigned(kpi.pnl)}
+              trend={kpi.pnl >= 0 ? 'up' : 'down'}
+              icon="profit"
+              subtitle={activeData ? activeData.reportLabel : `${history.length} days`}
+              onClick={() => setKpiModal('pnl')}
+            />
+            <KPICard title="Turnover" value={fmt(kpi.turnover)} icon="bets" onClick={() => setKpiModal('turnover')} />
+            <KPICard
+              title="Avg Margin"
+              value={`${isNaN(kpi.margin) ? '0.00' : kpi.margin.toFixed(2)}%`}
+              trend={kpi.margin >= 0 ? 'up' : 'down'}
+              icon="margin"
+              onClick={() => setKpiModal('margin')}
+            />
+            <KPICard title="Total Bets" value={kpi.bets.toLocaleString()} icon="bets" onClick={() => setKpiModal('bets')} />
+            <KPICard title="Rejections" value={kpi.rejections.toLocaleString()} icon="warning" trend="neutral" onClick={() => setKpiModal('rejections')} />
+            <KPICard
+              title="High Risk Users"
+              value={kpi.highRiskUsers.toString()}
+              icon="warning"
+              trend={kpi.highRiskUsers > 0 ? 'down' : 'neutral'}
+              onClick={() => setKpiModal('highRisk')}
+            />
+          </div>
         )}
 
         <SevenDaySummary history={history} />
@@ -254,21 +273,20 @@ const Index = () => {
         <IplMatchTracker />
 
         {data && (
-        <>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <PnLChart history={history} selectedId={selectedId} onSelectDay={setSelectedId} />
-          </div>
-          <BetSplitChart data={data.betSplit} />
-        </div>
-
-        <SportsTable data={data.sportsBreakdown} />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <RejectionsTable data={data.rejectionReasons} />
-          <UserSummaryTable data={data.userSummaries} />
-        </div>
-        <MarketPatternChart data={data.marketPatterns} />
-        </>
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <PnLChart history={history} selectedId={selectedId} onSelectDay={setSelectedId} />
+              </div>
+              <BetSplitChart data={data.betSplit} />
+            </div>
+            <SportsTable data={data.sportsBreakdown} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <RejectionsTable data={data.rejectionReasons} />
+              <UserSummaryTable data={data.userSummaries} />
+            </div>
+            <MarketPatternChart data={data.marketPatterns} />
+          </>
         )}
       </main>
 
