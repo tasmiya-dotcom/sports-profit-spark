@@ -21,7 +21,7 @@ import ShareToSlack from '@/components/ShareToSlack';
 import CurrencyToggle from '@/components/CurrencyToggle';
 import IplMatchTracker from '@/components/IplMatchTracker';
 import PostMatchReports from '@/components/PostMatchReports';
-import NavLink from '@/components/NavLink';
+
 import type { KPISummary, DashboardData } from '@/lib/types';
 
 type KPIType = 'pnl' | 'turnover' | 'margin' | 'bets' | 'rejections' | 'highRisk';
