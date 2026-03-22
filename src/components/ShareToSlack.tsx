@@ -11,6 +11,7 @@ const DASHBOARD_URL = 'https://sports-profit-spark.lovable.app';
 
 const EXCLUDED_NICKNAMES = new Set([
   'tasmiya', 'hayk', 'khushi', 'arsen', 'misho', 'test_ind', 'test', 'zhen', 'palig', 'misak', 'talin',
+  'testtt_arm', 'test_arm', 'palig mobile',
 ]);
 
 const EXCLUDED_SOURCE_IDS = new Set([
@@ -24,59 +25,33 @@ const EXCLUDED_SOURCE_IDS = new Set([
   '68e7aacbb9c15cc4a4334bcb', '68e7b936b9c15cc4a4334f23', '68df773b0248bf6fbf55ce12',
 ]);
 
-const SPORT_ABBREVS: Record<string, string> = {
-  cric: 'Cricket', cricket: 'Cricket',
-  foot: 'Football', football: 'Football', soccer: 'Soccer',
-  bask: 'Basketball', basketball: 'Basketball',
-  tenn: 'Tennis', tennis: 'Tennis',
-  base: 'Baseball', baseball: 'Baseball',
-  hock: 'Hockey', hockey: 'Hockey',
-  tabl: 'Table Tennis', tt: 'Table Tennis',
-  vol: 'Volleyball', volleyball: 'Volleyball',
-  hand: 'Handball', handball: 'Handball',
-  espo: 'Esports', esports: 'Esports',
-  kab: 'Kabaddi', kabaddi: 'Kabaddi',
-  rugby: 'Rugby', rug: 'Rugby',
-  mma: 'MMA', box: 'Boxing',
-  ice: 'Ice Hockey',
-};
-
-function expandSportAbbrev(abbrev: string): string {
-  const lower = abbrev.toLowerCase().trim();
-  return SPORT_ABBREVS[lower] || abbrev;
-}
-
-function formatMarketEntry(market: string, count: number): string {
-  // Market field may be "Sport:MarketGroup" e.g. "Cric:Other"
-  const colonIdx = market.indexOf(':');
-  if (colonIdx > 0) {
-    const sport = expandSportAbbrev(market.slice(0, colonIdx));
-    const group = market.slice(colonIdx + 1).trim();
-    return `${sport}: ${count.toLocaleString()} bets on ${group}`;
-  }
-  return `${market}: ${count.toLocaleString()} bets`;
-}
-
 function isTestUser(userId: string, username: string): boolean {
   if (EXCLUDED_SOURCE_IDS.has(userId)) return true;
   if (EXCLUDED_SOURCE_IDS.has(username)) return true;
   if (EXCLUDED_NICKNAMES.has(username.toLowerCase())) return true;
   if (EXCLUDED_NICKNAMES.has(userId.toLowerCase())) return true;
+  // Also catch any nickname containing 'test' or 'arsen'
+  if (/test|arsen/i.test(username)) return true;
   return false;
 }
 
 function isFooterRow(userId: string, username: string): boolean {
   const combined = `${userId} ${username}`.toLowerCase();
-  return combined.includes('generated:') || combined.includes('generated ') || /^\d{4}-\d{2}-\d{2}/.test(userId);
+  return (
+    combined.includes('generated:') ||
+    combined.includes('generated ') ||
+    combined.includes('excluded:') ||
+    combined.includes('all figures') ||
+    /^\d{4}-\d{2}-\d{2}/.test(userId) ||
+    userId.length > 30
+  );
 }
 
 function isValidRejectionReason(reason: string): boolean {
   const lower = reason.toLowerCase().trim();
-  // Reject section headers, column labels, usernames, and junk
   const junkPatterns = /^(rejection reason|reason|sport|nickname|user|source|bets|turnover|stake|p&l|pnl|total|count|generated|rejected bets|summary|overview|risk)/i;
   if (junkPatterns.test(lower)) return false;
   if (reason.toUpperCase() === reason && reason.length > 15) return false;
-  if (!reason.includes(' ') && reason.length < 15 && !/limit|exceed|restrict|block|suspend|error|fail|invalid|duplicate|cancel|ccf|odds|price|delay/i.test(reason)) return false;
   // Exclude internal test rejections
   if (/test|arsen|internal|dummy/i.test(lower)) return false;
   return true;
@@ -85,26 +60,49 @@ function isValidRejectionReason(reason: string): boolean {
 function buildSlackMessage(d: DashboardData): string {
   const kpi = d.kpiSummary;
   const date = d.reportLabel;
-  const fmt = (v: number) => { const safe = isNaN(v) ? 0 : v; return `€${Math.round(Math.abs(safe)).toLocaleString()}`; };
-  const fmtSigned = (v: number) => { const safe = isNaN(v) ? 0 : v; return `${safe >= 0 ? '' : '-'}€${Math.round(Math.abs(safe)).toLocaleString()}`; };
+  const fmt = (v: number) => {
+    const safe = isNaN(v) ? 0 : v;
+    return `€${Math.round(Math.abs(safe)).toLocaleString()}`;
+  };
+  const fmtSigned = (v: number) => {
+    const safe = isNaN(v) ? 0 : v;
+    return `${safe >= 0 ? '' : '-'}€${Math.round(Math.abs(safe)).toLocaleString()}`;
+  };
 
   const totalLiveTo = d.betSplit.reduce((s, b) => s + b.liveTurnover, 0);
   const totalPreTo = d.betSplit.reduce((s, b) => s + b.prematchTurnover, 0);
   const avgStake = kpi.bets > 0 ? kpi.turnover / kpi.bets : 0;
-  const validRejections = d.rejectionReasons.filter(r => r.count > 0 && isValidRejectionReason(r.reason));
-  // Prefer Report sheet KPI values (from RISK & CONTROLS — TOTALS) for turnover and P&L
-  // Only use filtered rejection detail sums as fallback
-  const filteredRejBets = validRejections.reduce((s, r) => s + r.count, 0);
-  const rejBets = kpi.rejections || filteredRejBets;
-  const rejTurnover = kpi.rejectedTurnover || validRejections.reduce((s, r) => s + r.blockedTurnover, 0);
-  const rejPotentialPnl = kpi.potentialPnl || validRejections.reduce((s, r) => s + r.potentialPnl, 0);
 
-  const sports = [...d.sportsBreakdown].filter(s => s.bets > 0 || s.turnover > 0).sort((a, b) => b.turnover - a.turnover);
+  // Filter valid rejections — no test reasons
+  const validRejections = d.rejectionReasons.filter(r => r.count > 0 && isValidRejectionReason(r.reason));
+
+  // Use KPI summary values from Report sheet first (most accurate)
+  // Fall back to summing valid rejections only
+  const rejBets = (kpi.rejections != null && !isNaN(kpi.rejections))
+    ? kpi.rejections
+    : validRejections.reduce((s, r) => s + r.count, 0);
+
+  const rejTurnover = (kpi.rejectedTurnover != null && !isNaN(kpi.rejectedTurnover) && kpi.rejectedTurnover > 0)
+    ? kpi.rejectedTurnover
+    : validRejections.reduce((s, r) => s + (r.blockedTurnover || 0), 0);
+
+  const rejPotentialPnl = (kpi.potentialPnl != null && !isNaN(kpi.potentialPnl))
+    ? kpi.potentialPnl
+    : validRejections.reduce((s, r) => s + (r.potentialPnl || 0), 0);
+
+  const sports = [...d.sportsBreakdown]
+    .filter(s => s.bets > 0 || s.turnover > 0)
+    .sort((a, b) => b.turnover - a.turnover);
+
+  // Filter users — remove test accounts and footer rows
   const users = [...d.userSummaries]
     .filter(u => !isTestUser(u.userId, u.username) && !isFooterRow(u.userId, u.username))
     .sort((a, b) => b.turnover - a.turnover);
-  
-  const marketLines = d.rawMarkets.filter(m => m.count > 0).sort((a, b) => b.count - a.count).slice(0, 5);
+
+  const marketLines = d.rawMarkets
+    .filter(m => m.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
 
   const lines: string[] = [];
   lines.push(`📊 *Sportsbook Performance Report: ${date} (00:00 - 23:59)*`);
@@ -115,7 +113,7 @@ function buildSlackMessage(d: DashboardData): string {
   lines.push(`• Live: ${fmt(totalLiveTo)} | Pre-Match: ${fmt(totalPreTo)} | Avg Stake: ${fmt(avgStake)}`);
   lines.push('');
   lines.push('*Performance*');
-  lines.push(`• P&L: ${fmtSigned(kpi.pnl)} | Margin: ${kpi.margin.toFixed(2)}%`);
+  lines.push(`• P&L: ${fmtSigned(kpi.pnl)} | Margin: ${isNaN(kpi.margin) ? '0.00' : kpi.margin.toFixed(2)}%`);
   lines.push('');
 
   if (sports.length > 0) {
@@ -134,7 +132,7 @@ function buildSlackMessage(d: DashboardData): string {
   if (validRejections.length > 0) {
     lines.push('*Rejection Reasons*');
     for (const r of validRejections) {
-      lines.push(`• ${r.reason}: ${r.count.toLocaleString()} bets`);
+      lines.push(`• ${r.reason}: ${r.count.toLocaleString()} ${r.count === 1 ? 'bet' : 'bets'}`);
     }
     lines.push('');
   }
@@ -142,8 +140,15 @@ function buildSlackMessage(d: DashboardData): string {
   if (users.length > 0) {
     lines.push('*Real User Activity*');
     for (const u of users) {
-      const hasNick = u.username && u.username !== u.userId && u.username !== '—' && u.username !== '-' && u.username.trim() !== '';
-      const userLabel = hasNick ? `${u.username} (${u.userId.slice(0, 8)}...)` : u.userId;
+      const hasNick = u.username &&
+        u.username !== u.userId &&
+        u.username !== '—' &&
+        u.username !== '-' &&
+        u.username.trim() !== '';
+      // Show full Source ID — no truncation
+      const userLabel = hasNick
+        ? `${u.username} (${u.userId})`
+        : u.userId;
       lines.push(`• ${userLabel}, bets: ${u.bets.toLocaleString()}, turnover: ${fmt(u.turnover)}`);
     }
     lines.push('');
